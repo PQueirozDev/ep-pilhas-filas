@@ -1,0 +1,4 @@
+# Binários gerados por compilar.bat
+*.exe
+*.o
+*.obj
