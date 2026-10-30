@@ -131,6 +131,59 @@
     font-size: 12px; line-height: 24px; text-align: center;
   }
   .passos b { color: var(--text); font-weight: 500; }
+  .passos li { transition: color 300ms var(--curva); }
+  .passos li::before { transition: background-color 300ms var(--curva), color 300ms var(--curva); }
+  .passos li.atual { color: var(--text); }
+  .passos li.atual::before { background: var(--fifo); color: #000000; }
+
+  /* ---------- Demonstração animada ---------- */
+  .demo-grade { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: start; gap: 32px; }
+  .janela { background: #000000; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .janela-barra {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 8px 8px 8px 16px; background: var(--surface); border-bottom: 1px solid var(--line);
+  }
+  .janela-titulo { font-family: "Geist Mono", monospace; font-size: 12px; line-height: 16px; color: var(--muted); }
+  .controles { display: flex; gap: 4px; }
+  .controles button {
+    border: 0; cursor: pointer; color: var(--text); background: transparent;
+    font: inherit; font-size: 12px; line-height: 16px; font-weight: 600;
+    padding: 6px 10px; border-radius: 9999px;
+    transition: background-color 300ms var(--curva), transform 300ms var(--curva);
+  }
+  .controles button:hover { background: var(--surface-2); }
+  .controles button:active { transform: scale(0.98); }
+  .controles button:focus-visible { outline: 2px solid var(--fifo); outline-offset: 2px; }
+  .tela {
+    border: 0; border-radius: 0; padding: 16px;
+    height: clamp(240px, 48vh, 440px); overflow: auto;
+    font-size: 13px; line-height: 18px;
+    scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+  }
+  .tela .menu { color: #6E6E6E; }
+  .tela .status { color: var(--muted); }
+  .tela .prog { color: var(--text); font-weight: 500; }
+  .tela .entrada { color: var(--text); font-weight: 500; }
+  .tela .lifo { color: var(--lifo); }
+  .cursor {
+    display: inline-block; width: 8px; height: 15px; margin-left: 1px;
+    background: #D6D6D6; vertical-align: -3px;
+    animation: piscar 1s steps(1) infinite;
+  }
+  @keyframes piscar { 50% { opacity: 0; } }
+  .lado { display: grid; gap: 24px; }
+  .estado { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 8px; }
+  .medidor {
+    display: grid; gap: 2px; padding: 8px 12px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    transition: border-color 300ms var(--curva), background-color 300ms var(--curva);
+  }
+  .medidor span { font-size: 12px; line-height: 16px; color: var(--muted); }
+  .medidor b { font-family: "Geist Mono", monospace; font-size: 16px; line-height: 24px; font-weight: 500; }
+  .medidor:first-child b { font-size: 14px; }
+  .medidor.fifo b { color: var(--fifo); }
+  .medidor.lifo b { color: var(--lifo); }
+  .medidor.mudou { border-color: var(--muted); background: var(--surface-2); }
 
   /* ---------- Navegação ---------- */
   .nav {
@@ -166,13 +219,15 @@
     .terminal { overflow-x: auto; }
     .diagrama { flex-wrap: wrap; }
     .slide.saindo { transform: none; }
-    .g2, .g3, .g4 { grid-template-columns: 1fr; }
+    .g2, .g3, .g4, .demo-grade { grid-template-columns: 1fr; }
+    .tela { height: 360px; }
     .titulo, .capa .titulo { font-size: 36px; line-height: 40px; }
     h2 { font-size: 30px; line-height: 36px; }
     .nav { display: none; }
   }
   @media (prefers-reduced-motion: reduce) {
     .slide, .slide.saindo { transform: none !important; transition: opacity 300ms var(--curva); }
+    .cursor { animation: none; }
   }
 </style>
 </head>
@@ -249,28 +304,34 @@
   <section class="slide" aria-label="Slide 3: demonstração">
     <p class="rotulo">DEMONSTRAÇÃO AO VIVO</p>
     <h2>O programa rodando no terminal</h2>
-    <div class="grade g2">
-      <div class="terminal" aria-label="Exemplo de saída do programa">
-        <div class="cmd">compilar.bat</div>
-        <div class="cmd">banco.exe</div>
-        <br>
-        <div>#1 Depósito | conta 3 | R$ 100,00 -> <span class="ok">efetivado</span></div>
-        <div>#2 Saque | conta 3 | R$ 500,00 -> <span class="erro">recusado: saldo insuficiente</span></div>
-        <div>#3 Transferência | conta 1 -> 2 | R$ 200,00 -> <span class="ok">efetivado</span></div>
-        <div>#5 Pagamento | conta 2 | R$ 50,50 -> <span class="ok">efetivado</span></div>
-        <br>
-        <div>topo -> #5 Pagamento | conta 2 | R$ 50,50</div>
-        <div>        #3 Transferência | conta 1 -> 2 | R$ 200,00</div>
-        <div>        #1 Depósito | conta 3 | R$ 100,00</div>
+    <div class="grade demo-grade">
+      <div class="janela">
+        <div class="janela-barra">
+          <span class="janela-titulo">banco.exe &lt; demo/demo.txt</span>
+          <div class="controles">
+            <button type="button" id="demo-pausa">Pausar</button>
+            <button type="button" id="demo-reiniciar">Reiniciar</button>
+            <button type="button" id="demo-vel" aria-label="Velocidade: 1x">1x</button>
+          </div>
+        </div>
+        <div class="terminal tela" id="tela" role="log" aria-label="Saída real do programa, reproduzida em animação"></div>
       </div>
-      <ol class="passos">
-        <li><span><b>Enfileirar quatro pedidos</b> e mostrar a fila na ordem de chegada.</span></li>
-        <li><span><b>Processar a fila:</b> o saque sem saldo é recusado e não entra na pilha.</span></li>
-        <li><span><b>Estornar:</b> sai o pagamento #5, o topo. O saldo volta ao valor anterior.</span></li>
-        <li><span><b>Agendar três pagamentos</b> fora de ordem e ver a lista ordenada por data.</span></li>
-        <li><span><b>Cancelar um agendado</b> e avançar a data: os vencidos entram na fila.</span></li>
-        <li><span><b>Histórico completo</b> e estornos até a pilha esvaziar.</span></li>
-      </ol>
+      <div class="lado">
+        <div class="estado" aria-label="Estado das estruturas no programa">
+          <div class="medidor"><span>Data</span><b id="m-data">13/11/2026</b></div>
+          <div class="medidor fifo"><span>Fila</span><b id="m-fila">0</b></div>
+          <div class="medidor"><span>Agendados</span><b id="m-agend">0</b></div>
+          <div class="medidor lifo"><span>Pilha</span><b id="m-pilha">0</b></div>
+        </div>
+        <ol class="passos" id="passos">
+          <li><span><b>Enfileirar quatro pedidos</b> e mostrar a fila na ordem de chegada.</span></li>
+          <li><span><b>Processar a fila:</b> o saque sem saldo é recusado e não entra na pilha.</span></li>
+          <li><span><b>Estornar:</b> sai o pagamento #5, o topo. O saldo volta ao valor anterior.</span></li>
+          <li><span><b>Agendar três pagamentos</b> fora de ordem e ver a lista ordenada por data.</span></li>
+          <li><span><b>Cancelar um agendado</b> e avançar a data: os vencidos entram na fila.</span></li>
+          <li><span><b>Histórico completo</b> e estornos até a pilha esvaziar.</span></li>
+        </ol>
+      </div>
     </div>
   </section>
 
@@ -365,6 +426,496 @@
   <button type="button" id="proximo" aria-label="Próximo slide">Próximo</button>
 </nav>
 
+<!-- Saída real de "banco.exe < demo/demo.txt", reproduzida pela animação do slide 3 -->
+<script type="text/plain" id="transcricao">
+=== Sistema Bancário: Pilhas e Filas ===
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 0
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 1
+
+Conta 1 | Ana Souza            | saldo: R$ 1000,00
+Conta 2 | Bruno Lima           | saldo: R$ 250,50
+Conta 3 | Carla Dias           | saldo: R$ 50,00
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 0
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 2
+
+  Conta: 3
+  Valor (R$): 100
+  Pedido #1 entrou no fim da fila.
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 1 | Agendados: 0 | Pilha: 0
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 3
+
+  Conta: 3
+  Valor (R$): 500
+  Pedido #2 entrou no fim da fila.
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 2 | Agendados: 0 | Pilha: 0
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 5
+
+  Conta de origem: 1
+  Conta de destino: 2
+  Valor (R$): 200
+  Pedido #3 entrou no fim da fila.
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 3 | Agendados: 0 | Pilha: 0
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 5
+
+  Conta de origem: 2
+  Conta de destino: 2
+  Valor (R$): 10
+  Pedido #4 recusado: origem e destino são a mesma conta.
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 3 | Agendados: 0 | Pilha: 0
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 4
+
+  Conta: 2
+  Valor (R$): 50,50
+  Pedido #5 entrou no fim da fila.
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 4 | Agendados: 0 | Pilha: 0
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 11
+
+  FILA FIFO (o primeiro sai primeiro):
+  1) #1 Depósito | conta 3 | R$ 100,00
+  2) #2 Saque | conta 3 | R$ 500,00
+  3) #3 Transferência | conta 1 -> 2 | R$ 200,00
+  4) #5 Pagamento | conta 2 | R$ 50,50
+  AGENDADOS (por data, empate pela chegada):
+  (nenhum pagamento agendado)
+  PILHA DE EFETIVADAS (o topo é estornado primeiro):
+  (pilha vazia)
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 4 | Agendados: 0 | Pilha: 0
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 7
+
+  #1 Depósito | conta 3 | R$ 100,00 -> efetivado
+  #2 Saque | conta 3 | R$ 500,00 -> recusado: saldo insuficiente
+  #3 Transferência | conta 1 -> 2 | R$ 200,00 -> efetivado
+  #5 Pagamento | conta 2 | R$ 50,50 -> efetivado
+
+  Saldos depois do processamento:
+Conta 1 | Ana Souza            | saldo: R$ 800,00
+Conta 2 | Bruno Lima           | saldo: R$ 400,00
+Conta 3 | Carla Dias           | saldo: R$ 150,00
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 3
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 11
+
+  FILA FIFO (o primeiro sai primeiro):
+  (fila vazia)
+  AGENDADOS (por data, empate pela chegada):
+  (nenhum pagamento agendado)
+  PILHA DE EFETIVADAS (o topo é estornado primeiro):
+  topo -> #5 Pagamento | conta 2 | R$ 50,50
+          #3 Transferência | conta 1 -> 2 | R$ 200,00
+          #1 Depósito | conta 3 | R$ 100,00
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 3
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 9
+
+  Estornado: #5 Pagamento | conta 2 | R$ 50,50
+  Conta 2 voltou para R$ 450,50.
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 2
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 6
+
+  Conta: 1
+  Valor (R$): 80
+  Data do pagamento (dd/mm/aaaa): 20/11/2026
+  Pagamento #6 agendado para 20/11/2026.
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 0 | Agendados: 1 | Pilha: 2
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 6
+
+  Conta: 2
+  Valor (R$): 30
+  Data do pagamento (dd/mm/aaaa): 15/11/2026
+  Pagamento #7 agendado para 15/11/2026.
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 0 | Agendados: 2 | Pilha: 2
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 6
+
+  Conta: 3
+  Valor (R$): 10
+  Data do pagamento (dd/mm/aaaa): 20/11/2026
+  Pagamento #8 agendado para 20/11/2026.
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 0 | Agendados: 3 | Pilha: 2
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 6
+
+  Conta: 1
+  Valor (R$): 10
+  Data do pagamento (dd/mm/aaaa): 10/11/2026
+  Agendamento #9 recusado: a data precisa ser depois de hoje.
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 0 | Agendados: 3 | Pilha: 2
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 11
+
+  FILA FIFO (o primeiro sai primeiro):
+  (fila vazia)
+  AGENDADOS (por data, empate pela chegada):
+  1) #7 Pagamento | conta 2 | R$ 30,00 | para 15/11/2026
+  2) #6 Pagamento | conta 1 | R$ 80,00 | para 20/11/2026
+  3) #8 Pagamento | conta 3 | R$ 10,00 | para 20/11/2026
+  PILHA DE EFETIVADAS (o topo é estornado primeiro):
+  topo -> #3 Transferência | conta 1 -> 2 | R$ 200,00
+          #1 Depósito | conta 3 | R$ 100,00
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 0 | Agendados: 3 | Pilha: 2
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 10
+
+  Número do pagamento agendado: 8
+  Agendamento #8 cancelado.
+
+============================================================
+ Data simulada: 13/11/2026 | Fila: 0 | Agendados: 2 | Pilha: 2
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 8
+
+  Avançar quantos dias? 7
+  Nova data: 20/11/2026. 2 pagamento(s) agendado(s) entraram na fila.
+
+============================================================
+ Data simulada: 20/11/2026 | Fila: 2 | Agendados: 0 | Pilha: 2
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 7
+
+  #7 Pagamento | conta 2 | R$ 30,00 | para 15/11/2026 -> efetivado
+  #6 Pagamento | conta 1 | R$ 80,00 | para 20/11/2026 -> efetivado
+
+  Saldos depois do processamento:
+Conta 1 | Ana Souza            | saldo: R$ 720,00
+Conta 2 | Bruno Lima           | saldo: R$ 420,50
+Conta 3 | Carla Dias           | saldo: R$ 150,00
+
+============================================================
+ Data simulada: 20/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 4
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 12
+
+  [13/11/2026] #4 Transferência | conta 2 -> 2 | R$ 10,00 -> recusado: origem e destino são a mesma conta
+  [13/11/2026] #1 Depósito | conta 3 | R$ 100,00 -> efetivado
+  [13/11/2026] #2 Saque | conta 3 | R$ 500,00 -> recusado: saldo insuficiente
+  [13/11/2026] #3 Transferência | conta 1 -> 2 | R$ 200,00 -> efetivado
+  [13/11/2026] #5 Pagamento | conta 2 | R$ 50,50 -> efetivado
+  [13/11/2026] #5 Pagamento | conta 2 | R$ 50,50 -> estornado (operação desfeita)
+  [13/11/2026] #6 Pagamento | conta 1 | R$ 80,00 | para 20/11/2026 -> agendado
+  [13/11/2026] #7 Pagamento | conta 2 | R$ 30,00 | para 15/11/2026 -> agendado
+  [13/11/2026] #8 Pagamento | conta 3 | R$ 10,00 | para 20/11/2026 -> agendado
+  [13/11/2026] #9 Pagamento | conta 1 | R$ 10,00 | para 10/11/2026 -> recusado: a data precisa ser depois de hoje
+  [13/11/2026] #8 Pagamento | conta 3 | R$ 10,00 | para 20/11/2026 -> agendamento cancelado
+  [20/11/2026] #7 Pagamento | conta 2 | R$ 30,00 | para 15/11/2026 -> efetivado
+  [20/11/2026] #6 Pagamento | conta 1 | R$ 80,00 | para 20/11/2026 -> efetivado
+
+============================================================
+ Data simulada: 20/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 4
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 9
+
+  Estornado: #6 Pagamento | conta 1 | R$ 80,00 | para 20/11/2026
+  Conta 1 voltou para R$ 800,00.
+
+============================================================
+ Data simulada: 20/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 3
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 9
+
+  Estornado: #7 Pagamento | conta 2 | R$ 30,00 | para 15/11/2026
+  Conta 2 voltou para R$ 450,50.
+
+============================================================
+ Data simulada: 20/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 2
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 9
+
+  Estornado: #3 Transferência | conta 1 -> 2 | R$ 200,00
+  Conta 1 voltou para R$ 1000,00; conta 2 voltou para R$ 250,50.
+
+============================================================
+ Data simulada: 20/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 1
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 9
+
+  Estornado: #1 Depósito | conta 3 | R$ 100,00
+  Conta 3 voltou para R$ 50,00.
+
+============================================================
+ Data simulada: 20/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 0
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 9
+
+  nada a estornar: nenhuma operação efetivada.
+
+============================================================
+ Data simulada: 20/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 0
+============================================================
+  1) Listar contas            7) Processar fila de pedidos
+  2) Depósito                 8) Avançar data simulada
+  3) Saque                    9) Estornar última operação
+  4) Pagamento imediato      10) Cancelar pagamento agendado
+  5) Transferência           11) Ver fila, agendados e pilha
+  6) Agendar pagamento       12) Histórico
+  0) Sair
+Opção: 0
+
+
+Até logo!
+</script>
+<script type="text/plain" id="entradas">
+1
+2
+3
+100
+3
+3
+500
+5
+1
+2
+200
+5
+2
+2
+10
+4
+2
+50,50
+11
+7
+11
+9
+6
+1
+80
+20/11/2026
+6
+2
+30
+15/11/2026
+6
+3
+10
+20/11/2026
+6
+1
+10
+10/11/2026
+11
+10
+8
+8
+7
+7
+12
+9
+9
+9
+9
+9
+0
+</script>
 <script>
   const slides = [...document.querySelectorAll('.slide')];
   const pontos = document.getElementById('pontos');
@@ -399,6 +950,7 @@
     anterior.disabled = atual === 0;
     proximo.disabled = atual === slides.length - 1;
     history.replaceState(null, '', '#' + (atual + 1));
+    demo.verificar();
   }
 
   anterior.addEventListener('click', () => ir(atual - 1));
@@ -409,6 +961,172 @@
     if (e.key === 'Home') ir(0);
     if (e.key === 'End') ir(slides.length - 1);
   });
+
+  // ---------- Demonstração: reproduz a saída real de "banco.exe < demo/demo.txt" ----------
+  const demo = (() => {
+    const tela = document.getElementById('tela');
+    const secao = tela.closest('.slide');
+    const passos = [...document.querySelectorAll('#passos li')];
+    const botaoPausa = document.getElementById('demo-pausa');
+    const botaoVel = document.getElementById('demo-vel');
+    const medidores = {
+      data: document.getElementById('m-data'), fila: document.getElementById('m-fila'),
+      agend: document.getElementById('m-agend'), pilha: document.getElementById('m-pilha'),
+    };
+    const linhas = document.getElementById('transcricao').textContent.replace(/^\n|\n$/g, '').split('\n');
+    const entradas = document.getElementById('entradas').textContent.trim().split('\n');
+    const celular = matchMedia('(max-width: 900px)');
+    const instantaneo = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const CANCELADO = Symbol('cancelado');
+    const VELOCIDADES = [1, 2, 4];
+
+    // Separa a transcrição em blocos de menu, linhas de saída e entradas digitadas.
+    // Dentro do menu só a linha "Opção:" recebe entrada (a linha de status também termina em ": N").
+    const acoes = [];
+    let k = 0, menu = null;
+    for (const l of linhas) {
+      const v = entradas[k];
+      const prefixo = v !== undefined && l.endsWith(v) ? l.slice(0, l.length - v.length) : null;
+      if (prefixo !== null && /[:?] $/.test(prefixo) && (!menu || prefixo === 'Opção: ')) {
+        if (menu) { acoes.push({ tipo: 'menu', linhas: menu }); menu = null; }
+        acoes.push({ tipo: 'digitar', prefixo, valor: v, opcao: prefixo === 'Opção: ' });
+        k++;
+      } else if (menu) menu.push(l);
+      else if (/^=+$/.test(l)) menu = [l];
+      else acoes.push({ tipo: 'linha', texto: l });
+    }
+
+    // Opção do menu -> passo da lista ao lado (só avança, nunca volta).
+    const PASSO_DA_OPCAO = { 2: 0, 3: 0, 4: 0, 5: 0, 11: 0, 7: 1, 9: 2, 6: 3, 10: 4, 8: 4, 12: 5 };
+
+    let geracao = 0, vel = 1, pausadoPeloUsuario = false, visivel = false, iniciado = false;
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor';
+
+    const pausado = () => pausadoPeloUsuario || !visivel;
+
+    function espera(ms, g) {
+      if (instantaneo) return Promise.resolve();
+      return new Promise((ok, falha) => {
+        let resta = ms, ultimo = performance.now();
+        (function tique(agora) {
+          if (g !== geracao) return falha(CANCELADO);
+          if (!pausado()) resta -= (agora - ultimo) * vel;
+          ultimo = agora;
+          if (resta <= 0) ok(); else requestAnimationFrame(tique);
+        })(ultimo);
+      });
+    }
+
+    const escapar = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    function colorir(t) {
+      let h = escapar(t);
+      if (/^=== /.test(t)) return '<span class="prog">' + h + '</span>';
+      h = h.replace(/-&gt; efetivado$/, '-&gt; <span class="ok">efetivado</span>');
+      h = h.replace(/(recusado:.*|nada a estornar:.*)$/, '<span class="erro">$1</span>');
+      h = h.replace(/(estornado \(operação desfeita\)|Estornado:)/, '<span class="lifo">$1</span>');
+      return h;
+    }
+
+    function escrever(html, classe) {
+      const pertoDoFim = tela.scrollHeight - tela.scrollTop - tela.clientHeight < 48;
+      const div = document.createElement('div');
+      if (classe) div.className = classe;
+      div.innerHTML = html;
+      div.appendChild(cursor);
+      tela.appendChild(div);
+      if (pertoDoFim) tela.scrollTop = tela.scrollHeight;
+      return div;
+    }
+
+    function medir(linhaStatus) {
+      const m = linhaStatus.match(/Data simulada: (\S+) \| Fila: (\d+) \| Agendados: (\d+) \| Pilha: (\d+)/);
+      if (!m) return;
+      [['data', m[1]], ['fila', m[2]], ['agend', m[3]], ['pilha', m[4]]].forEach(([chave, valor]) => {
+        const b = medidores[chave];
+        if (b.textContent === valor) return;
+        b.textContent = valor;
+        const caixa = b.parentElement;
+        caixa.classList.add('mudou');
+        setTimeout(() => caixa.classList.remove('mudou'), 600);
+      });
+    }
+
+    function marcarPasso(n) {
+      passos.forEach((li, i) => li.classList.toggle('atual', i === n));
+    }
+
+    async function rodar() {
+      const g = ++geracao;
+      let passo = -1;
+      tela.textContent = '';
+      tela.scrollTop = 0;
+      medir('Data simulada: 13/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 0');
+      marcarPasso(-1);
+      try {
+        escrever('<span class="cmd">banco.exe &lt; demo/demo.txt</span>');
+        await espera(900, g);
+        for (const a of acoes) {
+          if (a.tipo === 'linha') {
+            escrever(colorir(a.texto) || ' ');
+            await espera(a.texto ? 70 : 25, g);
+          } else if (a.tipo === 'menu') {
+            for (const l of a.linhas) {
+              const status = l.startsWith(' Data simulada');
+              escrever(escapar(l) || ' ', status ? 'status' : 'menu');
+              if (status) medir(l);
+            }
+          } else {
+            const div = escrever(escapar(a.prefixo));
+            const digitado = document.createElement('span');
+            digitado.className = 'entrada';
+            div.insertBefore(digitado, cursor);
+            await espera(a.opcao ? 700 : 350, g);
+            for (const c of a.valor) {
+              digitado.textContent += c;
+              await espera(110, g);
+            }
+            if (a.opcao && a.valor in PASSO_DA_OPCAO) {
+              passo = Math.max(passo, PASSO_DA_OPCAO[a.valor]);
+              marcarPasso(passo);
+            }
+            await espera(300, g);
+          }
+        }
+        await espera(6000, g);
+        if (!instantaneo) rodar();
+      } catch (e) {
+        if (e !== CANCELADO) throw e;
+      }
+    }
+
+    botaoPausa.addEventListener('click', () => {
+      pausadoPeloUsuario = !pausadoPeloUsuario;
+      botaoPausa.textContent = pausadoPeloUsuario ? 'Continuar' : 'Pausar';
+    });
+    document.getElementById('demo-reiniciar').addEventListener('click', () => {
+      pausadoPeloUsuario = false;
+      botaoPausa.textContent = 'Pausar';
+      rodar();
+    });
+    botaoVel.addEventListener('click', () => {
+      vel = VELOCIDADES[(VELOCIDADES.indexOf(vel) + 1) % VELOCIDADES.length];
+      botaoVel.textContent = vel + 'x';
+      botaoVel.setAttribute('aria-label', 'Velocidade: ' + vel + 'x');
+    });
+
+    // No desktop a animação roda só com o slide ativo; no celular, quando o terminal aparece na tela.
+    let naTela = false;
+    new IntersectionObserver(([e]) => { naTela = e.isIntersecting; verificar(); }, { threshold: 0.3 }).observe(tela);
+
+    function verificar() {
+      visivel = celular.matches ? naTela : secao.classList.contains('ativo');
+      if (visivel && !iniciado) { iniciado = true; rodar(); }
+    }
+
+    return { verificar };
+  })();
 
   const inicial = parseInt(location.hash.slice(1), 10);
   if (inicial >= 1 && inicial <= slides.length && inicial !== 1) {
