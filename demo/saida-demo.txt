@@ -1,0 +1,536 @@
+Bem-vindo ao Banco EP. Contas de demonstração:
+   Conta 1  Ana       R$    500.00
+   Conta 2  Bruno     R$    200.00
+   Conta 3  Carla     R$     50.00
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 11
+
+  Data: 05/11/2026
+
+  CONTAS
+   Conta 1  Ana       R$    500.00
+   Conta 2  Bruno     R$    200.00
+   Conta 3  Carla     R$     50.00
+
+  FILA de pedidos imediatos (1º = próximo a ser atendido)
+   (fila vazia)
+
+  PILHA de efetivadas (topo = próximo estorno)
+   (pilha vazia)
+
+  AGENDA de pagamentos (ordem de execução)
+   (nenhum pagamento agendado)
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 7
+  Nada a estornar.
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 2
+Conta do saque: 3
+Valor: R$ 40
+  Pedido na fila (posição 1): #1 SAQUE          R$    40.00  (conta 3)
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 2
+Conta do saque: 3
+Valor: R$ 30
+  Pedido na fila (posição 2): #2 SAQUE          R$    30.00  (conta 3)
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 3
+Conta de origem: 1
+Conta de destino: 2
+Valor: R$ 150
+  Pedido na fila (posição 3): #3 TRANSFERÊNCIA  R$   150.00  (conta 1 -> conta 2)
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 11
+
+  Data: 05/11/2026
+
+  CONTAS
+   Conta 1  Ana       R$    500.00
+   Conta 2  Bruno     R$    200.00
+   Conta 3  Carla     R$     50.00
+
+  FILA de pedidos imediatos (1º = próximo a ser atendido)
+   1º  #1 SAQUE          R$    40.00  (conta 3)
+   2º  #2 SAQUE          R$    30.00  (conta 3)
+   3º  #3 TRANSFERÊNCIA  R$   150.00  (conta 1 -> conta 2)
+
+  PILHA de efetivadas (topo = próximo estorno)
+   (pilha vazia)
+
+  AGENDA de pagamentos (ordem de execução)
+   (nenhum pagamento agendado)
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 6
+  [EFETIVADA] #1 SAQUE          R$    40.00  (conta 3)
+  [RECUSADA: saldo insuficiente] #2 SAQUE          R$    30.00  (conta 3)
+  [EFETIVADA] #3 TRANSFERÊNCIA  R$   150.00  (conta 1 -> conta 2)
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 11
+
+  Data: 05/11/2026
+
+  CONTAS
+   Conta 1  Ana       R$    350.00
+   Conta 2  Bruno     R$    350.00
+   Conta 3  Carla     R$     10.00
+
+  FILA de pedidos imediatos (1º = próximo a ser atendido)
+   (fila vazia)
+
+  PILHA de efetivadas (topo = próximo estorno)
+   TOPO -> #3 TRANSFERÊNCIA  R$   150.00  (conta 1 -> conta 2)
+           #1 SAQUE          R$    40.00  (conta 3)
+
+  AGENDA de pagamentos (ordem de execução)
+   (nenhum pagamento agendado)
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 7
+  [ESTORNADA] #3 TRANSFERÊNCIA  R$   150.00  (conta 1 -> conta 2)
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 8
+Conta que paga: 1
+Valor: R$ 100
+Data do pagamento (DD/MM/AAAA): 10/11/2026
+  [AGENDADO] #4 PAGAMENTO      R$   100.00  (conta 1)  para 10/11/2026
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 8
+Conta que paga: 1
+Valor: R$ 50
+Data do pagamento (DD/MM/AAAA): 08/11/2026
+  [AGENDADO] #5 PAGAMENTO      R$    50.00  (conta 1)  para 08/11/2026
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 8
+Conta que paga: 1
+Valor: R$ 30
+Data do pagamento (DD/MM/AAAA): 10/11/2026
+  [AGENDADO] #6 PAGAMENTO      R$    30.00  (conta 1)  para 10/11/2026
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 8
+Conta que paga: 1
+Valor: R$ 20
+Data do pagamento (DD/MM/AAAA): 12/11/2026
+  [AGENDADO] #7 PAGAMENTO      R$    20.00  (conta 1)  para 12/11/2026
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 11
+
+  Data: 05/11/2026
+
+  CONTAS
+   Conta 1  Ana       R$    500.00
+   Conta 2  Bruno     R$    200.00
+   Conta 3  Carla     R$     10.00
+
+  FILA de pedidos imediatos (1º = próximo a ser atendido)
+   (fila vazia)
+
+  PILHA de efetivadas (topo = próximo estorno)
+   TOPO -> #1 SAQUE          R$    40.00  (conta 3)
+
+  AGENDA de pagamentos (ordem de execução)
+   #5 PAGAMENTO      R$    50.00  (conta 1)  para 08/11/2026
+   #4 PAGAMENTO      R$   100.00  (conta 1)  para 10/11/2026
+   #6 PAGAMENTO      R$    30.00  (conta 1)  para 10/11/2026
+   #7 PAGAMENTO      R$    20.00  (conta 1)  para 12/11/2026
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 9
+  Agenda atual:
+   #5 PAGAMENTO      R$    50.00  (conta 1)  para 08/11/2026
+   #4 PAGAMENTO      R$   100.00  (conta 1)  para 10/11/2026
+   #6 PAGAMENTO      R$    30.00  (conta 1)  para 10/11/2026
+   #7 PAGAMENTO      R$    20.00  (conta 1)  para 12/11/2026
+Número do pagamento a cancelar: 7
+  [CANCELADO] #7 PAGAMENTO      R$    20.00  (conta 1)  para 12/11/2026
+
+========== BANCO EP  |  hoje: 05/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 10
+Nova data (DD/MM/AAAA): 10/11/2026
+  Data atual: 10/11/2026
+  [AGENDADO PAGO] #5 PAGAMENTO      R$    50.00  (conta 1)  para 08/11/2026
+  [AGENDADO PAGO] #4 PAGAMENTO      R$   100.00  (conta 1)  para 10/11/2026
+  [AGENDADO PAGO] #6 PAGAMENTO      R$    30.00  (conta 1)  para 10/11/2026
+
+========== BANCO EP  |  hoje: 10/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 7
+  [ESTORNADA] #1 SAQUE          R$    40.00  (conta 3)
+
+========== BANCO EP  |  hoje: 10/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 7
+  Nada a estornar.
+
+========== BANCO EP  |  hoje: 10/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 12
+Conta (0 = todas): 0
+
+  HISTÓRICO
+   05/11/2026  EFETIVADA         #1 SAQUE          R$    40.00  (conta 3)
+   05/11/2026  RECUSADA (saldo)  #2 SAQUE          R$    30.00  (conta 3)
+   05/11/2026  EFETIVADA         #3 TRANSFERÊNCIA  R$   150.00  (conta 1 -> conta 2)
+   05/11/2026  ESTORNADA         #3 TRANSFERÊNCIA  R$   150.00  (conta 1 -> conta 2)
+   05/11/2026  AGENDADA          #4 PAGAMENTO      R$   100.00  (conta 1)  para 10/11/2026
+   05/11/2026  AGENDADA          #5 PAGAMENTO      R$    50.00  (conta 1)  para 08/11/2026
+   05/11/2026  AGENDADA          #6 PAGAMENTO      R$    30.00  (conta 1)  para 10/11/2026
+   05/11/2026  AGENDADA          #7 PAGAMENTO      R$    20.00  (conta 1)  para 12/11/2026
+   05/11/2026  AGEND. CANCELADA  #7 PAGAMENTO      R$    20.00  (conta 1)  para 12/11/2026
+   08/11/2026  AGENDADO PAGO     #5 PAGAMENTO      R$    50.00  (conta 1)  para 08/11/2026
+   10/11/2026  AGENDADO PAGO     #4 PAGAMENTO      R$   100.00  (conta 1)  para 10/11/2026
+   10/11/2026  AGENDADO PAGO     #6 PAGAMENTO      R$    30.00  (conta 1)  para 10/11/2026
+   10/11/2026  ESTORNADA         #1 SAQUE          R$    40.00  (conta 3)
+
+========== BANCO EP  |  hoje: 10/11/2026 ==========
+ Pedidos imediatos (entram na FILA)
+   1 - Depósito
+   2 - Saque
+   3 - Transferência
+   4 - Pagamento imediato
+ Processamento
+   5 - Processar próximo pedido da fila
+   6 - Processar todos os pedidos da fila
+   7 - Estornar a última operação efetivada (PILHA)
+ Pagamentos agendados
+   8 - Agendar pagamento
+   9 - Cancelar pagamento agendado
+  10 - Avançar a data (executa os agendados vencidos)
+ Consultas
+  11 - Ver situação (contas, fila, pilha, agenda)
+  12 - Histórico
+   0 - Sair
+Opção: 0
+Até logo!

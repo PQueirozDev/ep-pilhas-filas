@@ -1,61 +1,86 @@
-# EP Pilhas e Filas — Sistema bancário em C
+# EP Pilhas e Filas: processamento de transações bancárias em C
 
-Sistema de linha de comando que processa pedidos bancários em **fila (FIFO)** e guarda as operações efetivadas em uma **pilha (LIFO)** para estorno. Pagamentos agendados esperam em uma fila ordenada por data, e tudo fica registrado em um histórico.
+Demonstração interativa no terminal. Clientes do banco pedem **depósito, saque, transferência e
+pagamento** (imediato ou agendado) e podem **estornar** a última operação efetivada.
 
-## Compilar e rodar (Windows)
+| Estrutura | Onde | Por quê |
+|---|---|---|
+| **Fila (FIFO)** | pedidos imediatos (`src/fila.c`) | quem pediu primeiro é atendido primeiro. A ordem decide quem fica sem saldo quando dois pedidos disputam o mesmo dinheiro |
+| **Pilha (LIFO)** | operações efetivadas (`src/pilha.c`) | o estorno desfaz a **última** efetivada. Desfazer na ordem inversa sempre volta a um estado que já existiu |
+| **Vetor + `qsort`** | pagamentos agendados (`src/agendados.c`) | ordenados por data. Como o `qsort` não é estável, o **número de entrada** desempata datas iguais (mantém FIFO) |
+| **Lista encadeada** | histórico (`src/historico.c`) | cresce sem limite fixo; cada registro é criado com `malloc` e liberado com `free` |
 
-Requer `gcc` (instalado: WinLibs, gcc 16.2.0).
+## Compilar
 
+Precisa do `gcc` (no Windows: MinGW/WinLibs).
+
+**Windows:**
 ```
-compilar.bat          (gera banco.exe e testes.exe)
-banco.exe             (menu interativo)
-testes.exe            (63 testes automatizados)
-banco.exe < demo\demo.txt   (demonstração completa, sem digitar)
+compilar.bat      gera banco.exe e os 4 executáveis de teste
+testar.bat        roda todos os testes
+banco.exe         abre o menu
 ```
 
-Comando manual (qualquer sistema):
+**Linux/macOS:** `make`, `make testes`, `./banco`
 
+**Comando manual (qualquer sistema):**
 ```
-gcc -Wall -Wextra -o banco src/*.c
-gcc -Wall -Wextra -Isrc -o testes testes/testes.c src/modelos.c src/fila.c src/banco.c src/pilha.c src/agendados.c src/historico.c src/sistema.c
+gcc -Wall -Wextra -std=c99 -Isrc src/operacao.c src/pilha.c src/fila.c src/agendados.c src/historico.c src/sistema.c src/entrada.c src/main.c -o banco
 ```
 
-## Como usar
+## Usar
 
-O programa começa em 13/11/2026 com três contas: 1 Ana Souza (R$ 1000,00), 2 Bruno Lima (R$ 250,50), 3 Carla Dias (R$ 50,00).
+O programa começa em **05/11/2026** com três contas: **1 Ana (R$ 500)**, **2 Bruno (R$ 200)** e
+**3 Carla (R$ 50)**.
 
 | Opção | O que faz |
 |---|---|
-| 1 | Lista as contas |
-| 2–5 | Depósito, saque, pagamento imediato, transferência: o pedido entra no **fim da fila** |
-| 6 | Agenda um pagamento para uma data futura (`dd/mm/aaaa`) |
-| 7 | Processa a fila **na ordem de chegada**; efetivados vão para a pilha |
-| 8 | Avança a data simulada; agendados vencidos entram na fila |
-| 9 | Estorna a operação do **topo da pilha** (a mais recente) |
-| 10 | Cancela um pagamento ainda agendado |
-| 11 | Mostra fila, agendados e pilha |
-| 12 | Histórico completo |
-| 0 | Sai |
+| 1 a 4 | Depósito, saque, transferência, pagamento imediato: o pedido entra no **fim da fila** |
+| 5 | Processa o **primeiro** da fila: se houver saldo, efetiva e **empilha**; senão, recusa |
+| 6 | Processa a fila inteira, em ordem |
+| 7 | **Estorna** o topo da pilha (a última efetivada). Pilha vazia → "Nada a estornar." |
+| 8 | Agenda um pagamento para uma data **futura** (`DD/MM/AAAA`) |
+| 9 | Cancela um agendado que ainda não executou |
+| 10 | Avança a data simulada e executa os agendados vencidos, em ordem |
+| 11 | Mostra contas, fila, pilha e agenda |
+| 12 | Histórico (de todas as contas ou de uma) |
+| 0 | Sai (libera a memória do histórico) |
 
-Valores aceitam `150`, `150,50` ou `150.50`.
+Valores aceitam `150`, `150.50` ou `150,50`. Entradas inválidas repetem a pergunta.
 
-## Onde está cada parte
+**Demonstração automática** (sem digitar nada):
+```
+banco.exe < demo\entrada-demo.txt
+```
+A saída esperada está em `demo/saida-demo.txt`.
+
+## Casos extremos tratados
+
+| Caso | Comportamento | Teste |
+|---|---|---|
+| Estorno sem nada efetivado (pilha vazia) | "Nada a estornar." | `teste_pilha`, `teste_sistema` §1 |
+| Saldo insuficiente | pedido recusado e registrado no histórico; saldo não muda | `teste_sistema` §3 |
+| Dois pedidos disputando o saldo | o primeiro da fila leva; o segundo é recusado | `teste_sistema` §3 |
+| Agendados com a mesma data | executam na ordem de entrada (desempate do `qsort`) | `teste_agendados`, `teste_sistema` §5 |
+| Agendado para hoje ou para o passado | recusado (use pagamento imediato) | `teste_sistema` §5 |
+| Cancelar agendado já executado | "não há pagamento agendado com esse número" | `teste_sistema` §5 |
+| Estorno quando o dinheiro já foi usado (ex.: um agendado gastou o depósito) | estorno recusado; a operação volta ao topo e nada muda | `teste_sistema` §6 |
+| Conta inexistente (inclusive conta 0), valor ≤ 0, acima de R$ 1.000.000 ou `nan`, transferência para a mesma conta | recusado antes de entrar na fila | `teste_sistema` §2 |
+| Fila / pilha / agenda cheias | mensagem de limite; nada é perdido | `teste_fila`, `teste_pilha` |
+
+## Arquivos
 
 | Arquivo | Conteúdo |
 |---|---|
-| `src/fila.h`, `src/fila.c` | **Fila FIFO** em vetor circular: `enfileirar`, `desenfileirar`, `fila_vazia` |
-| `src/pilha.h`, `src/pilha.c` | **Pilha LIFO** em lista encadeada: `empilhar`, `desempilhar`, `topo` |
-| `src/agendados.h`, `src/agendados.c` | Fila de agendados com **inserção ordenada** por data (desempate FIFO) |
-| `src/historico.h`, `src/historico.c` | Histórico em lista encadeada (inserção no fim) |
-| `src/banco.h`, `src/banco.c` | Regras: depósito, saque, pagamento, transferência tudo ou nada, reversão |
-| `src/sistema.h`, `src/sistema.c` | Caminho de cada operação pelas estruturas |
-| `src/modelos.h`, `src/modelos.c` | Conta, Pedido, Data, conversão de valores |
-| `src/main.c` | Menu e leitura do teclado |
-| `testes/testes.c` | Testes automatizados com resultados previstos à mão |
-| `demo/demo.txt` | Entrada da demonstração |
-| `slides/index.html` | Slides para o professor (abrir no navegador; setas trocam o slide) |
-| `roteiro.md` | Roteiro de 15 min e respostas para perguntas |
-| `ensaio.md` | Texto falado, plano de treino, simulação de perguntas e plano B |
-| `explicacao-codigo.md` | Explicação de cada arquivo e função, para estudo da equipe |
-
-Registro do uso de IA: `processo-ia.md`. Plano da equipe: `PLANO-EP-pilhas-filas.md`.
+| `src/operacao.h/.c` | struct `Operacao` (a "ficha" de cada operação) e impressão |
+| `src/pilha.h/.c` | pilha LIFO em vetor: `empilhar`, `desempilhar`, `pilhaVazia` |
+| `src/fila.h/.c` | fila FIFO em vetor circular: `enfileirar`, `desenfileirar`, `filaVazia` |
+| `src/agendados.h/.c` | agenda ordenada com `qsort` e `compararAgendados` (data, depois número) |
+| `src/historico.h/.c` | lista encadeada com `malloc`/`free` |
+| `src/sistema.h/.c` | contas e regras: caminho de cada operação pelas estruturas |
+| `src/entrada.h/.c` | leitura segura do teclado (`fgets` + `sscanf`) |
+| `src/main.c` | menu |
+| `testes/` | 4 programas de teste (62 verificações) |
+| `demo/` | roteiro da demonstração e saída esperada |
+| `processo-ia.md` | diário das iterações com a IA |
+| `slides/index.html` | slides da apresentação |

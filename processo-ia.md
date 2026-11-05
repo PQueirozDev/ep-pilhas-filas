@@ -1,191 +1,188 @@
-# Registro do processo com IA
+# Diário do processo com IA
 
-Registro cronológico do uso de IA (Claude Code) no EP de Pilhas e Filas. Cada iteração traz: solicitação, solução proposta, alteração feita, motivo e resultado.
+Projeto: EP de Algoritmos (Senac): pilhas e filas aplicadas a transações bancárias.
+Formato de cada entrada: data · pedido · solução proposta · alteração · motivo · resultado.
 
 ---
 
-## Iteração 1 — 30/10/2026 — Etapas 0 e 1 (esqueleto e modelos)
+## Iteração 1 · 2026-11-05 · Recomeço, decisões e pilha de efetivadas
 
-**Solicitação:** "continue o projeto" (seguindo o `PLANO-EP-pilhas-filas.md`).
+**Pedido:** descartar a versão anterior da pasta e recomeçar do zero, com código para
+iniciantes (sem conhecimento prévio de struct/ponteiro), em incrementos pequenos. Manter o
+mesmo repositório GitHub (`PQueirozDev/ep-pilhas-filas`) e o mesmo domínio Vercel (para os
+slides, mais tarde). Primeiro incremento: struct da operação + pilha de efetivadas + teste.
+Usar o Codex como assistente de revisão.
+
+**Decisões registradas (não serão reabertas sem consultar a equipe):**
+- Fila (FIFO) para pedidos imediatos: depósito, saque, transferência, pagamento imediato.
+  Motivo: quem pediu primeiro é atendido primeiro.
+- Pilha (LIFO) de operações **efetivadas**, usada no estorno: estornar desfaz a última
+  efetivada (topo). Pilha vazia → "nada a estornar".
+- Pagamentos agendados não entram na pilha; só podem ser cancelados antes de executar.
+- Agendados ordenados por data com `qsort()`. Como `qsort` não é estável, o número de
+  entrada é o critério de desempate para datas iguais (mantém a ordem FIFO).
+- Histórico em lista encadeada.
+- Slides ficam para depois (site só de apresentação).
 
 **Solução proposta:**
-- Etapa 0: criar a pasta `src/` com `main.c`, e o comando de compilação com `gcc`.
-- Etapa 1: criar `modelos.h` / `modelos.c` com `Conta`, `Pedido`, `Data` e os `enum` `TipoOperacao` e `Situacao`.
+- `src/operacao.h/.c`: struct `Operacao` (número de entrada, tipo, conta de origem, conta de
+  destino, valor) + `criarOperacao` e `imprimirOperacao`.
+- `src/pilha.h/.c`: pilha em vetor de tamanho fixo (100) com contador `quantidade`.
+  Funções: `iniciarPilha`, `pilhaVazia`, `pilhaCheia`, `empilhar`, `desempilhar`, `mostrarPilha`.
+  `empilhar`/`desempilhar` devolvem 1 (sucesso) ou 0 (cheia/vazia); quem chama decide a
+  mensagem.
+- `testes/teste_pilha.c`: pilha vazia, estorno sem nada efetivado, ordem LIFO conferida
+  número a número, pilha cheia.
 
-**Alterações:**
-- `src/modelos.h`: declarações dos tipos e das funções `criar_conta`, `imprimir_conta`, `imprimir_valor`, `nome_tipo`, `nome_situacao`.
-- `src/modelos.c`: implementação dessas funções.
-- `src/main.c`: imprime uma mensagem de boas-vindas e duas contas de exemplo.
-- `README.md`: como compilar e rodar.
+**Alteração:** versão antiga marcada com a tag git `versao-antiga` e removida da pasta;
+criadas as pastas `src/` e `testes/` e os arquivos acima.
 
-**Motivos das decisões:**
-- **Saldo e valores em centavos (`long`)**, não em `float`/`double`: números com vírgula em ponto flutuante têm erros de arredondamento (ex.: 0,1 + 0,2 ≠ 0,3). Com inteiros, R$ 10,50 vira 1050 e as contas ficam exatas.
-- **`Data` como struct própria** (dia, mês, ano): a data é simulada e avançada por comando, sem depender do relógio do computador.
-- **`SetConsoleOutputCP(CP_UTF8)`** só no Windows: sem isso o terminal mostra os acentos errados.
-- Separar modelos em arquivo próprio facilita localizar o código no entregável B.
+**Motivo das escolhas:**
+- Vetor em vez de lista encadeada na pilha: é mais simples para o primeiro contato e
+  ainda não exige `malloc`. A lista encadeada (com `malloc`/`free`) aparece no histórico.
+- Ponteiro (`Pilha *p`) introduzido aqui porque é indispensável: sem ele a função alteraria
+  só uma cópia da pilha.
+- Constantes com `#define` em vez de `enum`, para não acrescentar outro conceito agora.
 
-**Testes (previsão escrita antes de rodar):**
-- Compilar com `gcc -Wall -Wextra -o banco src/*.c` sem erros nem avisos.
-- Saída prevista:
-  ```
-  === Sistema Bancário: Pilhas e Filas ===
+**Revisão do Codex:** 3 apontamentos, todos confirmados e corrigidos:
+1. Comentário sobre `typedef` dava a entender que existia `struct Operacao` (a struct é
+   anônima) → comentário reescrito.
+2. Comentário do `#ifndef` dizia "na mesma compilação" → corrigido para "no mesmo .c".
+3. O teste só exibia a ordem LIFO, não a conferia → `tentarEstornar` passou a devolver o
+   número da operação desfeita e o teste verifica 3, 2, 1 e depois 0.
 
-  Conta 1 | Ana Souza            | saldo: R$ 1000,00
-  Conta 2 | Bruno Lima           | saldo: R$ 250,50
-  ```
-
-**Resultado:** o `gcc` não estava instalado; com a autorização da equipe, foi instalado o WinLibs (gcc 16.2.0, MinGW-w64 UCRT) via `winget`. Compilou sem avisos e a saída foi idêntica à prevista.
-
----
-
-## Iteração 2 — 30/10/2026 — Decisões pendentes
-
-**Solicitação:** a IA perguntou à equipe as escolhas que o plano deixava em aberto.
-
-**Respostas da equipe:**
-- Fila FIFO: **vetor circular**.
-- Estorno de depósito cujo dinheiro já foi usado: **recusar o estorno e manter a operação na pilha** (a conta nunca fica negativa).
-- Data simulada: **avançada por comando no menu**, não pelo relógio real (demonstração reproduzível).
-
-**Resultado:** regras incorporadas ao plano de implementação das próximas etapas.
+**Resultado:** compila sem avisos (`gcc -Wall -Wextra -std=c99`); 11 verificações, todas OK.
+Ficou aguardando a previsão da equipe sobre a saída do teste (ver iteração 2).
 
 ---
 
-## Iteração 3 — 30/10/2026 — Etapas 2 e 3 (fila FIFO; depósito, saque e pagamento)
+## Iteração 2 · 2026-11-05 · Mudança de fluxo: fazer tudo sem parar
 
-**Solicitação:** continuar o projeto com as escolhas da Iteração 2.
+**Pedido:** "eu quero que você faça tudo, não que fique me perguntando, apenas faça".
+
+**Solução proposta:** abandonar as paradas por incremento e as perguntas de previsão. Implementar
+os incrementos restantes em sequência, testando cada um, e registrar tudo aqui.
+
+**Alteração:** nenhuma no código; muda o processo.
+
+**Motivo:** pedido explícito da equipe para agilizar a entrega.
+
+**Resultado:** iterações 3 a 7 feitas em sequência na mesma sessão.
+
+---
+
+## Iteração 3 · 2026-11-05 · Fila de pedidos imediatos (FIFO)
+
+**Pedido:** fila para depósito, saque, transferência e pagamento imediato.
+
+**Solução proposta:** `src/fila.h/.c`, fila em **vetor circular** (`inicio` + `quantidade`; o
+fim é `(inicio + quantidade) % CAPACIDADE_FILA`). Funções: `iniciarFila`, `filaVazia`,
+`filaCheia`, `enfileirar`, `desenfileirar`, `mostrarFila`. A struct `Operacao` ganhou o campo
+`data` (AAAAMMDD, usado só nos agendados) e `imprimirData`.
+
+**Motivo:** o vetor circular reaproveita as posições liberadas sem "empurrar" os itens. A
+justificativa do FIFO no domínio é que a ordem de chegada decide quem fica sem saldo quando
+dois pedidos disputam o mesmo dinheiro.
+
+**Resultado:** `testes/teste_fila.c`, com 10 verificações: vazia, ordem 1-2-3, cheia, volta
+completa no vetor com a ordem mantida. Todas OK.
+
+---
+
+## Iteração 4 · 2026-11-05 · Agenda com qsort e desempate
+
+**Pedido:** pagamentos agendados ordenados por data com `qsort`, mantendo FIFO em datas iguais.
+
+**Solução proposta:** `src/agendados.h/.c`. A função `compararAgendados` compara primeiro a data
+e, no empate, o número de entrada. `agendar` acrescenta e reordena. `cancelarAgendado` remove
+pelo número. `retirarVencido` tira o primeiro se a data já chegou.
+
+**Motivo:** `qsort` não é estável. Sem o 2º critério, dois pagamentos do mesmo dia poderiam
+inverter de lugar.
+
+**Resultado:** `testes/teste_agendados.c`, com 10 verificações. A ordem 2,4,1,3,6,5 confere o
+desempate em dois dias diferentes, e também cancelamento e execução só do que venceu. Todas OK.
+
+---
+
+## Iteração 5 · 2026-11-05 · Histórico em lista encadeada
+
+**Pedido:** histórico em lista encadeada.
+
+**Solução proposta:** `src/historico.h/.c`. Cada evento é um nó criado com `malloc`, com
+ponteiros `inicio` e `fim` para inserir no final em tempo constante. O filtro por conta mostra
+só os registros de um cliente. `liberarHistorico` faz o `free` nó a nó (guardando o próximo
+antes). Os 7 tipos de situação vão de efetivada até agendado recusado.
+
+**Motivo:** aqui aparecem pela primeira vez `malloc`/`free`/`NULL` e a struct
+autorreferente (`struct No *proximo`). Os comentários explicam cada um.
+
+**Resultado:** testado dentro do `teste_sistema` (19 registros, lista liberada ao encerrar).
+
+---
+
+## Iteração 6 · 2026-11-05 · Sistema, menu e entrada
+
+**Pedido:** menu interativo com todas as operações e estorno.
 
 **Solução proposta:**
-- Etapa 2: fila em vetor circular com `inicio` e `quantidade`; funções `fila_iniciar`, `fila_vazia`, `fila_cheia`, `enfileirar`, `desenfileirar`.
-- Etapa 3: módulo `banco` com o vetor de contas, `buscar_conta` e `processar_pedido`, que valida o pedido e chama `depositar` ou `debitar`.
+- `src/sistema.h/.c`: struct `Sistema` com contas, fila, pilha, agenda, histórico, data simulada
+  e próximo número. Uma regra única de movimentação, `aplicarOperacao`: sai da origem e entra no
+  destino. O inverso é `desfazerOperacao`.
+- Pedido imediato → validação → fila. Processar → se houver saldo, efetiva e **empilha**; se
+  não houver, recusa. Estornar → **desempilha**. Se o dinheiro já foi usado (ex.: um agendado
+  gastou o depósito), o estorno é recusado e a operação volta ao topo.
+- Agendados não entram na pilha e só podem ser cancelados antes de executar. "Avançar a data"
+  executa os vencidos em ordem.
+- `src/entrada.h/.c`: leitura com `fgets` + `sscanf` (letras não travam o programa), valores
+  com vírgula ou ponto, datas validadas (inclusive ano bissexto), acentos no terminal do
+  Windows (`SetConsoleOutputCP`), eco da entrada quando ela vem de arquivo, saída limpa no fim
+  da entrada.
+- `src/main.c`: menu com 12 opções.
+- `compilar.bat`, `testar.bat`, `Makefile`, `demo/entrada-demo.txt` e `demo/saida-demo.txt`.
 
-**Alterações:**
-- `src/fila.h`, `src/fila.c`: a fila FIFO.
-- `src/banco.h`, `src/banco.c`: contas, enum `Resultado` (motivo de recusa) e as operações.
-- `testes/testes.c`: testes automatizados com a macro `CONFERIR`.
+**Problema encontrado:** neste ambiente, o `cmd` não procura executáveis na pasta atual, e
+`testar.bat` falhava. **Correção:** chamar `.\teste_X.exe`.
 
-**Motivos das decisões:**
-- **Guardar `quantidade` em vez de `fim`**: no vetor circular, "vazia" e "cheia" teriam `inicio == fim`; com a quantidade, cada caso tem um teste simples (`== 0` e `== CAPACIDADE_FILA`).
-- **`%` (resto da divisão)** faz o índice voltar para 0 ao passar do fim do vetor.
-- **Fila cheia vira caso-limite**: `enfileirar` devolve 0 e o pedido não entra.
-- **Saque e pagamento usam a mesma função `debitar`**: as duas operações têm a mesma regra (debita se houver saldo).
-- **Validar tudo antes de alterar saldo**: valor ≤ 0 e conta inexistente são recusados sem tocar em nenhuma conta.
-- **`processar_pedido` marca a situação** (`efetivado` ou `recusado`), que será usada para decidir o que entra na pilha (Etapa 5).
-- Transferência ainda devolve "operação inválida"; será feita na Etapa 4.
-
-**Testes (previsão escrita antes de rodar):**
-- Fila: entram 1, 2, 3 → saem 1, 2, 3; desenfileirar de fila vazia falha; com 100 pedidos a fila fica cheia e o 101º é recusado; depois de tirar 2 e pôr 101 e 102, saem 3…100, 101, 102.
-- Conta com R$ 1000,00: depósito R$ 200,00 → R$ 1200,00; saque R$ 300,00 → R$ 900,00; saque R$ 5000,00 recusado, continua R$ 900,00; pagamento de R$ 900,00 → R$ 0,00; pagamento de R$ 0,01 com saldo zero recusado.
-- Valor zero, valor negativo e conta 99 recusados.
-
-**Resultado:** `19 testes, 0 falhas`; compilação sem avisos com `-Wall -Wextra`.
+**Resultado:** `testes/teste_sistema.c` cobre todos os casos extremos do enunciado. A
+demonstração automática roda do começo ao fim.
 
 ---
 
-## Iteração 4 — 30/10/2026 — Etapa 4 (transferência tudo ou nada)
+## Iteração 7 · 2026-11-05 · Revisão do Codex no projeto inteiro
 
-**Solicitação:** "pode completar todas as etapas".
+**Pedido:** usar o Codex como assistente de revisão.
 
-**Solução proposta:** função `transferir` em `banco.c` em duas partes: debita a origem; credita o destino; se a segunda parte falhar, desfaz a primeira. Validações antes de tudo em `validar_pedido`: valor > 0, origem existe, destino diferente da origem, destino existe.
+**Resultado da revisão:** 11 apontamentos, cada um conferido no código.
+- **Corrigidos:**
+  1. **Bug real:** digitar a conta 0 como origem de uma transferência criava dinheiro (a
+     validação ignorava `SEM_CONTA`). Agora cada tipo exige as suas contas.
+  2. Valores `nan`/`inf`/gigantes passavam pela validação. Agora a condição é
+     `!(valor > 0) || valor > R$ 1.000.000`.
+  3. A tolerância de meio centavo permitia sacar R$ 50,004 de um saldo de R$ 50. Agora os
+     valores são arredondados para centavos ao entrar.
+  4. O comentário de `titular[20]` falava em "19 letras"; o certo é 19 bytes (acentos ocupam 2).
+- **Não corrigidos (decisão consciente):** estouro de `int` ao digitar números com mais de 10
+  dígitos, linhas com mais de 99 caracteres, falha de `malloc` ignorada e `proximoNumero`
+  chegando a `INT_MAX`. São improváveis na demonstração, e a correção acrescentaria recursos
+  (`strtol`, `errno`) que fogem do nível do projeto.
 
-**Alterações:** `src/banco.c`, `src/banco.h` (novos resultados `RES_MESMA_CONTA` e `RES_LIMITE_SALDO`).
-
-**Motivos:**
-- Para a segunda parte poder falhar de verdade (e o "desfazer" ser testável), `creditar` recusa o crédito se o saldo passar do maior valor que cabe em um `long` (`LONG_MAX`). No Windows o `long` tem 32 bits (cerca de R$ 21 milhões); sem essa verificação a soma "estouraria" e viraria um saldo negativo.
-- `validar_pedido` ficou separado porque também é usado na entrada do pedido (ver Iteração 6).
-
-**Testes (previsão):** Ana R$ 1000,00 e Bruno R$ 250,50. Transferir R$ 100,00 → Ana R$ 900,00 e Bruno R$ 350,50. R$ 5000,00 → recusada, saldos iguais. Para a mesma conta → recusada. Para a conta 99 → recusada, origem igual. Bruno com saldo `LONG_MAX − 50` e transferência de R$ 1,00 → crédito falha e Ana continua com R$ 900,00.
-
-**Resultado:** todos passaram.
-
----
-
-## Iteração 5 — 30/10/2026 — Etapa 5 (pilha de efetivadas e estorno LIFO)
-
-**Solução proposta:** pilha em lista encadeada (`pilha.c`) com `empilhar`, `desempilhar`, `topo`, `pilha_vazia`. Cada item é uma `OperacaoEfetivada`: o pedido e os saldos de antes. `reverter_operacao` (`banco.c`) faz a operação contrária; `sistema_estornar` olha o topo, tenta desfazer e só desempilha se der certo.
-
-**Motivos:**
-- **Lista encadeada na pilha** (a fila é vetor): toda operação efetivada vai para a pilha; com vetor fixo, uma pilha cheia obrigaria a recusar operações válidas só por falta de espaço para o estorno. Essa escolha não estava entre as pendentes do plano; a IA decidiu e registra aqui o motivo.
-- **Desfazer pela operação contrária** (e não copiando o saldo anterior): é a forma correta se outras contas mudarem no meio. Os saldos anteriores são guardados para mostrar ao usuário e conferir nos testes.
-- **Regra da equipe (Iteração 2):** estorno de depósito cujo dinheiro já saiu é recusado e a operação fica no topo. Observação: como o estorno sempre desfaz o topo, nada depois dele mexeu no saldo, então pelo menu essa situação não acontece. A regra fica como proteção e foi testada simulando a saída do dinheiro direto na conta.
-- Só o que é efetivado entra na pilha: `sistema_processar_proximo` só chama `empilhar` quando o resultado é `RES_OK`.
-
-**Testes (previsão):** depósito R$ 200 e saque R$ 300 em conta de R$ 1000 → R$ 900, 2 na pilha, topo = saque. 1º estorno → R$ 1200 (o valor de antes do saque). 2º estorno → R$ 1000. 3º estorno → "nada a estornar", nada muda. Saque recusado → pilha continua vazia. Estorno de transferência devolve os dois saldos. Depósito de R$ 100 em Carla (R$ 50 → R$ 150), saldo forçado para R$ 20, estorno → recusado, saldo R$ 20, operação continua no topo.
-
-**Resultado:** todos passaram.
+**Resultado:** 4 testes de regressão novos. Total de **62 verificações em 4 programas, todas
+OK**, compilando sem avisos com `gcc -Wall -Wextra -std=c99`.
 
 ---
 
-## Iteração 6 — 30/10/2026 — Etapa 6 (pagamentos agendados)
+## Iteração 8 · 2026-11-05 · README e slides
 
-**Solução proposta:** lista encadeada mantida em ordem de data (`agendados.c`). `agendados_inserir` anda pela lista enquanto a data do nó for **menor ou igual** à nova, e insere ali. `sistema_avancar_data` soma dias à data simulada e move para a fila FIFO os agendados com data ≤ hoje, na ordem da lista. `sistema_cancelar_agendamento` tira um agendado pelo número, sem passar pela pilha.
+**Pedido:** entregáveis A (README) e slides de apresentação, publicados no mesmo domínio Vercel
+(`ep-pilhas-filas.vercel.app`) e no mesmo repositório GitHub.
 
-**Motivos:**
-- O "ou igual" na comparação coloca o novo **depois** dos que já têm a mesma data: é o desempate FIFO. Inserção um a um, sem `qsort`, como o plano pede.
-- **Data de hoje também é recusada** (só data futura): um pagamento para hoje é um pagamento imediato (opção 4).
-- **Validação na entrada:** valor, conta e data são conferidos ao agendar (e os pedidos imediatos também têm valor e contas conferidos ao entrar na fila). O saldo só é conferido no processamento, porque depende dos pedidos que estão na frente.
-- Se a fila FIFO encher durante o avanço de data, os agendados restantes continuam na lista para a próxima vez.
-- Datas: `data_valida` (inclusive ano bissexto), `data_comparar` (transforma em aaaammdd), `data_somar_dias`.
+**Solução proposta:**
+- `README.md`: compilação (Windows, Linux, comando manual), tabela do menu, demonstração
+  automática, tabela de casos extremos com o teste que cobre cada um, mapa de arquivos.
+- `slides/index.html`: 14 slides em HTML puro, no mesmo caminho da versão anterior. O Vercel
+  está ligado ao GitHub e publica a cada push na `main`. Conteúdo: problema, visão geral,
+  struct, fila, pilha, ponteiro, agenda/qsort, lista encadeada, casos extremos, saída real da
+  demo, testes, uso de IA e resumo. Navegação por setas; no celular os slides viram rolagem.
 
-**Testes (previsão):** hoje 13/11/2026. Agendar #1 20/11, #2 15/11, #3 20/11, #4 15/11 → ordem #2, #4, #1, #3. Recusados: hoje, 10/11, 31/11, valor zero, conta 99. Avançar 2 dias → #2 e #4 vão para a fila, #2 primeiro. Cancelar #1 → sai da lista; cancelar #999 → não encontrado. Avançar 10 dias → só o #3. Processar → Ana R$ 1000 − 20 − 40 − 30 = R$ 910 (o cancelado não foi cobrado), 3 na pilha, #3 no topo. Datas: 28/02/2028 + 1 = 29/02/2028; 31/12/2026 + 1 = 01/01/2027.
-
-**Resultado:** todos passaram.
-
----
-
-## Iteração 7 — 30/10/2026 — Etapa 7 (histórico)
-
-**Solução proposta:** lista encadeada com ponteiros `inicio` e `fim` (`historico.c`); `historico_registrar` insere no fim. Cada nó guarda a data simulada, uma cópia do pedido e um texto fixo ("efetivado", "recusado: saldo insuficiente", "estornado (operação desfeita)", "agendado", "agendamento cancelado").
-
-**Motivos:** guardar o `fim` evita percorrer a lista inteira a cada inserção. O histórico é separado da pilha: ele guarda **tudo** (inclusive recusados), a pilha só o que ainda pode ser estornado.
-
-**Teste (previsão):** depósito #1, saque sem saldo #2, depósito de valor zero #3, processar, estornar → histórico: #3 recusado (na entrada), #1 efetivado, #2 recusado, #1 estornado; pilha vazia.
-
-**Resultado:** passou.
-
----
-
-## Iteração 8 — 30/10/2026 — Etapa 8 (menu e testes)
-
-**Solução proposta:** `main.c` só com menu e leitura do teclado; a lógica ficou em `sistema.c`. Leituras seguras: `ler_inteiro`, `ler_valor`, `ler_data` repetem a pergunta enquanto a entrada for inválida. Se a entrada vem de arquivo (`banco.exe < demo\demo.txt`), o programa repete o que leu, para a saída ficar legível. `compilar.bat` compila programa e testes.
-
-**Bug encontrado na demonstração:** a saída mostrou `Pedido #-636777471`. Causa: em `mostrar_resultado_entrada(sistema_solicitar(..., &id), id)` o C não garante a ordem de avaliação dos argumentos, e `id` foi lido antes de ser preenchido. Correção: chamar `sistema_solicitar` em uma linha e `mostrar_resultado_entrada` na seguinte.
-
-**Revisão independente (Codex CLI, outro assistente de IA):** 13 apontamentos, conferidos um a um no código.
-- Corrigidos: (1) uma linha só com espaços era lida como o número 0 (no menu, isso saía do programa); (2) linha longa demais tinha o começo aceito; agora é rejeitada; (3) `sscanf("%d")` com número enorme na data era comportamento indefinido; agora usa `%2d/%2d/%4d`; (4) avançar a data além de 31/12/9999 gerava data inválida; agora é recusado; (5) tipo de operação desconhecido passaria como efetivado; agora é recusado; (6) vetor `ordem` do teste sem valor inicial.
-- Não alterados, com motivo: falha de memória ao registrar no histórico, estouro do contador de ids, contas duplicadas/saldo inicial negativo, data inicial inválida e conta inexistente na reversão (situações que o programa não produz: as contas e a data inicial são fixas, a reversão só recebe operações que já passaram pela validação, e o limite de pedidos é muito maior que uma demonstração); cancelar agendado que já entrou na fila FIFO (decisão: tirar do meio da fila quebraria a ordem de chegada; depois de efetivado ele pode ser estornado; documentado em `sistema.h`).
-
-**Testes:** 63 testes automatizados (Etapas 2 a 7, conversão de valores e datas), sem avisos com `-Wall -Wextra`. Demonstração completa por `demo/demo.txt` conferida à mão. Entradas inválidas testadas: só espaços, linha de 200 caracteres, data `99999999999/11/2026`, 3000000 dias.
-
-**Resultado:** `63 testes, 0 falhas`.
-
----
-
-## Iteração 9 — 30/10/2026 — Etapa 9 (slides e roteiro)
-
-**Solução proposta:** `slides/index.html`, página única com 5 slides (problema, estruturas, demonstração, casos extremos, o que aprendemos), navegação por setas do teclado ou botões. Não executa o código: a demonstração é o programa no terminal. `roteiro.md` com a divisão dos 15 minutos entre os 3 integrantes, o passo a passo da demonstração e respostas prontas para as perguntas prováveis.
-
-**Motivo:** o plano define o site apenas como slides; o roteiro repete exatamente `demo/demo.txt`, então a demonstração ao vivo é reproduzível e há um plano B que roda sozinho.
-
-**Verificação:** capturas de tela no navegador (Edge sem interface) em 1440×900 e 500 px de largura. Corrigidos: a indentação da pilha no terminal do slide 3 sumia (HTML junta espaços; resolvido com `white-space: pre`), e no celular cada slide ocupava a altura inteira da tela.
-
-**Resultado:** 5 slides legíveis no computador e no celular; navegação por setas, botões e pontos.
-
----
-
-## Iteração 10 — 30/10/2026 — Decisões finais e material de estudo
-
-**Solicitação:** "pode escolher você mesmo isso, e depois cria um ensaio de apresentação e uma explicação do código inteiro".
-
-**Decisões confirmadas** (a equipe delegou a escolha à IA, que manteve o que já estava implementado):
-- Pilha em **lista encadeada** (com vetor fixo, uma pilha cheia obrigaria a recusar operações válidas).
-- Agendamento só para **data depois de hoje** (para hoje existe o pagamento imediato).
-- Agendado que já entrou na fila FIFO **não pode ser cancelado** (tirar do meio da fila quebraria a ordem de chegada); depois de efetivado, pode ser estornado.
-
-**Alterações:**
-- `explicacao-codigo.md`: visão geral, conceitos de C usados (ponteiros, `malloc`/`free`, `static`, `const`, `%`), explicação de cada arquivo e de cada função, desenhos do vetor circular e das listas, três passeios completos (saque, estorno, agendado) e perguntas de checagem com respostas.
-- `ensaio.md`: plano de treino até 13/11, checklist técnico, texto falado de cada integrante com tempos, falas para cada passo da demonstração, simulação de perguntas (incluindo "pegadinhas" e casos que o professor pode testar ao vivo), desafio de achar funções no código, plano B e autoavaliação.
-
-**Motivo:** a avaliação exige que todos os integrantes entendam e defendam o código; o material foi escrito para nível iniciante e aponta sempre o arquivo e a função.
-
-**Resultado:** as falas do ensaio foram conferidas contra a saída real de `demo/demo.txt` (ordem da fila 1, 2, 3, 5; saque #2 recusado; estornos 6, 7, 3, 1 e pilha vazia no fim).
+**Resultado:** slides conferidos em Chrome headless a 1440×900.

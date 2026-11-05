@@ -1,58 +1,94 @@
 /*
  * sistema.h
- * Junta todas as estruturas e define o caminho de cada operação:
+ * ---------
+ * Junta tudo: contas, fila de pedidos, pilha de efetivadas, agenda e
+ * histórico. Cada função aqui é um "caso de uso" do menu.
  *
- *   pedido imediato  -> FILA FIFO -> processar -> efetivado? -> PILHA
- *   pedido agendado  -> AGENDADOS (por data) -> avançar data -> FILA FIFO
- *   estorno          -> desempilha o TOPO da PILHA e desfaz
- *   tudo isso        -> registrado no HISTÓRICO
+ * Caminho de um pedido imediato:
+ *   cliente pede -> entra no FIM da FILA -> processar tira do INÍCIO ->
+ *   tem saldo?  sim -> efetiva, EMPILHA na pilha de efetivadas, histórico
+ *               não -> recusa, histórico
+ *   estornar -> DESEMPILHA o topo (a última efetivada) e a desfaz
+ *
+ * Caminho de um pagamento agendado:
+ *   agenda (ordenada por data, qsort com desempate) -> data avança ->
+ *   executa os vencidos em ordem -> histórico (NÃO vai para a pilha)
  */
+
 #ifndef SISTEMA_H
 #define SISTEMA_H
 
-#include "modelos.h"
-#include "banco.h"
+#include "operacao.h"
 #include "fila.h"
 #include "pilha.h"
 #include "agendados.h"
 #include "historico.h"
 
+#define NUM_CONTAS 3
+
+/* Um texto em C é um vetor de char terminado pelo caractere '\0'.
+ * "char titular[20]" guarda até 19 caracteres + o '\0' final
+ * (letras acentuadas ocupam 2 caracteres cada). */
 typedef struct {
-    Banco banco;
-    Fila fila;              /* pedidos imediatos (FIFO) */
-    Agendados agendados;    /* pagamentos com data futura (ordenados) */
-    Pilha pilha;            /* operações efetivadas (LIFO) */
-    Historico historico;    /* tudo, em ordem */
-    Data hoje;              /* data simulada */
-    int proximo_id;
+    int    numero;
+    char   titular[20];
+    double saldo;
+} Conta;
+
+typedef struct {
+    Conta     contas[NUM_CONTAS];
+    Fila      pedidos;       /* FIFO: pedidos imediatos esperando        */
+    Pilha     efetivadas;    /* LIFO: operações efetivadas, p/ estorno    */
+    Agenda    agendados;     /* pagamentos futuros, ordenados por data    */
+    Historico historico;     /* lista encadeada com todos os eventos      */
+    int       hoje;          /* data simulada, AAAAMMDD                   */
+    int       proximoNumero; /* número de entrada do próximo pedido       */
 } Sistema;
 
-void sistema_iniciar(Sistema *s, Data hoje);
-void sistema_liberar(Sistema *s);
+/* Códigos de resultado devolvidos pelas funções abaixo. */
+#define RES_OK                  0
+#define RES_VALOR_INVALIDO      1
+#define RES_CONTA_INVALIDA      2
+#define RES_MESMA_CONTA         3
+#define RES_FILA_CHEIA          4
+#define RES_FILA_VAZIA          5
+#define RES_SALDO_INSUFICIENTE  6
+#define RES_PILHA_CHEIA         7
+#define RES_NADA_A_ESTORNAR     8
+#define RES_ESTORNO_IMPOSSIVEL  9
+#define RES_DATA_INVALIDA      10
+#define RES_AGENDA_CHEIA       11
+#define RES_NAO_ENCONTRADO     12
 
-/* Coloca um pedido imediato na fila. id_gerado recebe o número do pedido. */
-Resultado sistema_solicitar(Sistema *s, TipoOperacao tipo, int origem, int destino,
-                            long valor, int *id_gerado);
+/* Prepara contas de exemplo, estruturas vazias e a data inicial. */
+void  iniciarSistema(Sistema *s, int dataInicial);
 
-/* Agenda um pagamento para uma data futura. */
-Resultado sistema_agendar(Sistema *s, int conta, long valor, Data data, int *id_gerado);
+/* Libera a memória do histórico. Chamar antes de sair. */
+void  encerrarSistema(Sistema *s);
 
-/* Processa o próximo da fila. Retorna 0 se a fila estava vazia. */
-int sistema_processar_proximo(Sistema *s, Pedido *processado, Resultado *resultado);
+/* Devolve o ENDEREÇO da conta com esse número, ou NULL se não existe. */
+Conta *buscarConta(Sistema *s, int numero);
 
-/* Avança a data e move os agendados vencidos para a fila.
-   Retorna quantos moveu, ou -1 se a nova data seria inválida. */
-int sistema_avancar_data(Sistema *s, int dias);
+/* Pedido imediato: valida e coloca no fim da fila (o saldo só é
+ * conferido ao processar, pois ele pode mudar até lá). */
+int solicitarOperacao(Sistema *s, int tipo, int origem, int destino, double valor);
 
-/* Desfaz a operação efetivada mais recente. */
-Resultado sistema_estornar(Sistema *s, OperacaoEfetivada *estornada);
+/* Atende o primeiro da fila. */
+int processarProximo(Sistema *s);
 
-/*
- * Cancela um pagamento que ainda está na lista de agendados.
- * Depois que a data chega e ele entra na fila FIFO, não pode mais ser
- * cancelado (tirar do meio da fila quebraria a ordem de chegada);
- * se for efetivado, pode ser estornado normalmente.
- */
-Resultado sistema_cancelar_agendamento(Sistema *s, int id);
+/* Atende a fila inteira, em ordem. Devolve quantos foram atendidos. */
+int processarTodos(Sistema *s);
+
+/* Desfaz a última operação efetivada (topo da pilha). */
+int estornar(Sistema *s);
+
+int agendarPagamento(Sistema *s, int conta, double valor, int data);
+int cancelarAgendamento(Sistema *s, int numero);
+
+/* Muda a data simulada e executa os agendados que venceram. */
+int avancarData(Sistema *s, int novaData);
+
+void mostrarContas(Sistema *s);
+void mostrarSituacao(Sistema *s);
 
 #endif

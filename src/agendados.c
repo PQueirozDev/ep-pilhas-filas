@@ -1,104 +1,112 @@
 /*
  * agendados.c
- * Lista encadeada mantida sempre em ordem de data.
+ * -----------
+ * Agenda de pagamentos ordenada por data com qsort (ver agendados.h).
  */
+
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h>     /* qsort */
 #include "agendados.h"
 
-void agendados_iniciar(Agendados *a) {
-    a->inicio = NULL;
+void iniciarAgenda(Agenda *a)
+{
     a->quantidade = 0;
 }
 
-int agendados_vazia(const Agendados *a) {
-    return a->inicio == NULL;
+int agendaVazia(Agenda *a)
+{
+    return a->quantidade == 0;
+}
+
+int agendaCheia(Agenda *a)
+{
+    return a->quantidade == CAPACIDADE_AGENDA;
 }
 
 /*
- * Inserção ordenada: anda pela lista enquanto a data do nó for MENOR OU
- * IGUAL à do novo pedido. O "ou igual" faz o novo ficar DEPOIS dos que
- * já têm a mesma data, que é o desempate FIFO.
+ * Função de comparação para o qsort.
+ *
+ * O qsort serve para QUALQUER tipo de vetor, por isso ele nos entrega
+ * ponteiros genéricos "const void *" (endereço de "algo" que não deve ser
+ * alterado). Nós sabemos que esse "algo" é uma Operacao, então
+ * convertemos para "const Operacao *" e lemos os campos com "->".
+ *
+ * Regra do qsort: devolver número NEGATIVO se a vem antes de b,
+ * POSITIVO se a vem depois, e 0 se tanto faz.
  */
-int agendados_inserir(Agendados *a, Pedido p) {
-    NoAgendado *novo = malloc(sizeof(NoAgendado));
-    if (novo == NULL) {
+int compararAgendados(const void *a, const void *b)
+{
+    const Operacao *x = (const Operacao *) a;
+    const Operacao *y = (const Operacao *) b;
+
+    /* 1º critério: data mais cedo vem antes */
+    if (x->data < y->data) return -1;
+    if (x->data > y->data) return 1;
+
+    /* 2º critério (desempate): mesma data -> quem entrou antes vem antes.
+     * Sem isso o qsort poderia inverter dois pagamentos do mesmo dia. */
+    if (x->numero < y->numero) return -1;
+    if (x->numero > y->numero) return 1;
+    return 0;
+}
+
+int agendar(Agenda *a, Operacao op)
+{
+    if (agendaCheia(a)) {
         return 0;
     }
-    novo->pedido = p;
-
-    NoAgendado *anterior = NULL;
-    NoAgendado *atual = a->inicio;
-    while (atual != NULL && data_comparar(atual->pedido.data, p.data) <= 0) {
-        anterior = atual;
-        atual = atual->proximo;
-    }
-
-    novo->proximo = atual;
-    if (anterior == NULL) {
-        a->inicio = novo;          /* entrou na frente de todos */
-    } else {
-        anterior->proximo = novo;  /* entrou entre "anterior" e "atual" */
-    }
+    a->itens[a->quantidade] = op;   /* coloca no fim...           */
     a->quantidade++;
+    /* ...e reordena. Parâmetros: vetor, quantos itens, tamanho de cada
+     * item em bytes (sizeof) e a função que compara dois itens. */
+    qsort(a->itens, a->quantidade, sizeof(Operacao), compararAgendados);
     return 1;
 }
 
-/* Se o primeiro da lista já venceu (data <= hoje), tira ele. */
-int agendados_retirar_vencido(Agendados *a, Data hoje, Pedido *saida) {
-    if (agendados_vazia(a) || data_comparar(a->inicio->pedido.data, hoje) > 0) {
+/* Remove o item da posição "pos" puxando os seguintes uma casa para trás,
+ * para o vetor continuar sem buracos e ordenado. */
+void removerPosicao(Agenda *a, int pos)
+{
+    int i;
+    for (i = pos; i < a->quantidade - 1; i++) {
+        a->itens[i] = a->itens[i + 1];
+    }
+    a->quantidade--;
+}
+
+int cancelarAgendado(Agenda *a, int numero, Operacao *cancelado)
+{
+    int i;
+    for (i = 0; i < a->quantidade; i++) {
+        if (a->itens[i].numero == numero) {
+            *cancelado = a->itens[i];
+            removerPosicao(a, i);
+            return 1;
+        }
+    }
+    return 0;   /* não está na agenda */
+}
+
+int retirarVencido(Agenda *a, int hoje, Operacao *saida)
+{
+    /* Como o vetor está ordenado, basta olhar o primeiro (posição 0). */
+    if (agendaVazia(a) || a->itens[0].data > hoje) {
         return 0;
     }
-    NoAgendado *removido = a->inicio;
-    *saida = removido->pedido;
-    a->inicio = removido->proximo;
-    free(removido);
-    a->quantidade--;
+    *saida = a->itens[0];
+    removerPosicao(a, 0);
     return 1;
 }
 
-/* Procura pelo id e tira da lista, ligando o anterior ao próximo. */
-int agendados_cancelar(Agendados *a, int id, Pedido *removido) {
-    NoAgendado *anterior = NULL;
-    NoAgendado *atual = a->inicio;
-    while (atual != NULL && atual->pedido.id != id) {
-        anterior = atual;
-        atual = atual->proximo;
-    }
-    if (atual == NULL) {
-        return 0;
-    }
-
-    if (anterior == NULL) {
-        a->inicio = atual->proximo;
-    } else {
-        anterior->proximo = atual->proximo;
-    }
-    *removido = atual->pedido;
-    free(atual);
-    a->quantidade--;
-    return 1;
-}
-
-void agendados_imprimir(const Agendados *a) {
-    if (agendados_vazia(a)) {
-        printf("  (nenhum pagamento agendado)\n");
+void mostrarAgenda(Agenda *a)
+{
+    int i;
+    if (agendaVazia(a)) {
+        printf("   (nenhum pagamento agendado)\n");
         return;
     }
-    int i = 1;
-    for (const NoAgendado *no = a->inicio; no != NULL; no = no->proximo) {
-        printf("  %d) ", i);
-        imprimir_pedido(&no->pedido);
-        printf("\n");
-        i++;
+    for (i = 0; i < a->quantidade; i++) {
+        printf("   ");
+        imprimirOperacao(a->itens[i]);
     }
-}
-
-void agendados_liberar(Agendados *a) {
-    while (a->inicio != NULL) {
-        NoAgendado *proximo = a->inicio->proximo;
-        free(a->inicio);
-        a->inicio = proximo;
-    }
-    a->quantidade = 0;
 }

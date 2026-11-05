@@ -4,1137 +4,449 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EP Pilhas e Filas: transações bancárias em C</title>
-<meta name="description" content="Slides do EP de Algoritmos (Senac, 2026): sistema bancário em C com fila FIFO e pilha LIFO.">
+<meta name="description" content="Slides do EP de Algoritmos (Senac, 2026): sistema bancário em C com fila FIFO, pilha LIFO, agenda ordenada com qsort e histórico em lista encadeada.">
 <meta name="robots" content="noindex">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23272727'/%3E%3Crect x='8' y='8' width='16' height='4' rx='1' fill='%23fff'/%3E%3Crect x='8' y='14' width='16' height='4' rx='1' fill='%239b9b9b'/%3E%3Crect x='8' y='20' width='16' height='4' rx='1' fill='%23666'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23141414'/%3E%3Crect x='8' y='8' width='16' height='4' rx='1' fill='%23F5B971'/%3E%3Crect x='8' y='14' width='16' height='4' rx='1' fill='%23F5B971' opacity='.6'/%3E%3Crect x='8' y='20' width='16' height='4' rx='1' fill='%23F5B971' opacity='.3'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #181818;
-    --surface: #1F1F1F;
-    --surface-2: #272727;
-    --line: #313131;
-    --text: #FFFFFF;
-    --muted: #9B9B9B;
+    --bg: #141414;
+    --surface: #1C1C1C;
+    --surface-2: #242424;
+    --line: #2E2E2E;
+    --text: #F4F4F4;
+    --muted: #9A9A9A;
     --fifo: #7CC4FA;
     --lifo: #F5B971;
-    --ok: #8BD3A0;
+    --agenda: #C3A6F7;
+    --lista: #8BD3A0;
     --erro: #F2878B;
     --curva: cubic-bezier(0.22, 1, 0.36, 1);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
   body {
-    background: var(--bg);
-    color: var(--text);
+    background: var(--bg); color: var(--text);
     font-family: "Geist", system-ui, sans-serif;
-    font-size: 16px;
-    line-height: 24px;
+    font-size: 18px; line-height: 1.5;
     overflow: hidden;
   }
-  code, .mono { font-family: "Geist Mono", ui-monospace, monospace; }
-  h1, h2, h3 { font-weight: 600; text-wrap: balance; }
+  code, pre, .mono { font-family: "Geist Mono", ui-monospace, monospace; }
+  h1, h2 { font-weight: 600; letter-spacing: -0.02em; text-wrap: balance; }
+  h1 { font-size: 64px; line-height: 1.05; }
+  h2 { font-size: 40px; line-height: 1.15; margin-bottom: 32px; }
   p, li { text-wrap: pretty; }
+  .muted { color: var(--muted); }
+  .rotulo { font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
 
-  .pular {
-    position: absolute; left: 16px; top: -64px; z-index: 10;
-    background: var(--surface-2); color: var(--text);
-    padding: 8px 12px; border-radius: 8px; text-decoration: none;
-  }
-  .pular:focus { top: 16px; }
-
-  /* ---------- Slides ---------- */
   main { position: relative; height: 100%; }
   .slide {
     position: absolute; inset: 0;
     display: flex; flex-direction: column; justify-content: center;
-    padding: 64px 96px 96px;
-    opacity: 0; transform: translateY(32px);
-    pointer-events: none;
-    transition: opacity 600ms var(--curva), transform 600ms var(--curva);
+    padding: 64px max(64px, calc((100vw - 1200px) / 2)) 96px;
+    opacity: 0; transform: translateY(24px); pointer-events: none;
+    transition: opacity 500ms var(--curva), transform 500ms var(--curva);
   }
   .slide.ativo { opacity: 1; transform: none; pointer-events: auto; }
-  .slide.saindo { transform: translateY(-32px); }
 
-  .rotulo {
-    font-family: "Geist Mono", monospace;
-    font-size: 14px; line-height: 20px;
-    color: var(--muted); letter-spacing: 0.04em;
-    margin-bottom: 16px;
-  }
-  .titulo {
-    font-size: 48px; line-height: 1;
-    max-width: 680px; margin-bottom: 24px;
-    background: linear-gradient(90deg, #FFFFFF, #9B9B9B);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  .capa .titulo { font-size: 60px; }
-  .sub { font-size: 20px; line-height: 28px; color: var(--muted); max-width: 680px; }
-  h2 { font-size: 36px; line-height: 40px; margin-bottom: 32px; max-width: 900px; }
-
-  .grade { display: grid; gap: 16px; }
-  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .grade { display: grid; gap: 24px; }
+  .g2 { grid-template-columns: 1fr 1fr; }
   .g3 { grid-template-columns: repeat(3, 1fr); }
   .g4 { grid-template-columns: repeat(4, 1fr); }
-
   .cartao {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    padding: 24px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 16px; padding: 24px;
   }
-  .cartao h3 { font-size: 20px; line-height: 28px; margin-bottom: 8px; }
-  .cartao p, .cartao li { color: var(--muted); font-size: 16px; line-height: 24px; }
-  .cartao ul { list-style: none; display: grid; gap: 8px; }
-  .etiqueta {
-    display: inline-block; font-family: "Geist Mono", monospace;
-    font-size: 12px; line-height: 16px;
-    padding: 2px 8px; border-radius: 4px; margin-bottom: 12px;
-    background: var(--surface-2); color: var(--muted);
-  }
-  .etiqueta.fifo { color: var(--fifo); }
-  .etiqueta.lifo { color: var(--lifo); }
+  .cartao h3 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .cartao p { color: var(--muted); font-size: 16px; }
+  .marca { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; }
 
-  /* ---------- Diagramas fila / pilha ---------- */
-  .diagrama { display: flex; gap: 8px; align-items: center; margin: 12px 0 16px; }
+  pre {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    padding: 20px 24px; font-size: 15px; line-height: 1.6; overflow: auto;
+    color: #D8D8D8;
+  }
+  pre .c { color: #6F6F6F; }
+  pre .k { color: var(--fifo); }
+  pre .p { color: var(--lifo); }
+  pre .v { color: var(--lista); }
+  pre .e { color: var(--erro); }
+  pre .a { color: var(--agenda); }
+
+  ul.lista { list-style: none; display: grid; gap: 14px; }
+  ul.lista li { padding-left: 24px; position: relative; }
+  ul.lista li::before { content: ""; position: absolute; left: 0; top: 11px; width: 8px; height: 8px; border-radius: 2px; background: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 14px; }
+  td code { font-size: 14px; color: var(--lifo); }
+
+  /* Fluxo (diagrama) */
+  .fluxo { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .no { padding: 14px 18px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 16px; }
+  .no b { display: block; font-weight: 600; }
+  .no small { color: var(--muted); font-size: 13px; }
+  .seta { color: var(--muted); font-size: 22px; }
+
+  /* Pilha e fila visuais */
+  .caixas { display: flex; gap: 8px; }
+  .caixas.vertical { flex-direction: column; width: 280px; }
   .caixa {
-    font-family: "Geist Mono", monospace; font-size: 14px; line-height: 20px;
-    padding: 8px 12px; border-radius: 8px;
-    background: var(--surface-2); border: 1px solid var(--line);
+    padding: 12px 16px; border-radius: 10px; font-size: 15px;
+    font-family: "Geist Mono", ui-monospace, monospace;
+    border: 1px solid var(--line); background: var(--surface-2);
   }
-  .seta { color: var(--muted); font-family: "Geist Mono", monospace; font-size: 14px; }
-  .pilha { flex-direction: column-reverse; align-items: stretch; width: 200px; gap: 4px; }
-  .pilha .caixa:last-child { border-color: var(--lifo); color: var(--lifo); }
-  .fila .caixa:first-of-type { border-color: var(--fifo); color: var(--fifo); }
+  .caixa.f { border-color: rgba(124,196,250,.5); }
+  .caixa.p { border-color: rgba(245,185,113,.5); }
+  .caixa.x { border-color: rgba(242,135,139,.6); color: var(--erro); }
 
-  .caminho { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 24px; }
-
-  /* ---------- Terminal ---------- */
-  .terminal {
-    background: #000000; border: 1px solid var(--line); border-radius: 16px;
-    padding: 24px; font-family: "Geist Mono", monospace;
-    font-size: 14px; line-height: 20px; color: #D6D6D6;
+  nav {
+    position: fixed; left: 0; right: 0; bottom: 0; height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px; color: var(--muted); font-size: 14px;
   }
-  .terminal div { white-space: pre; }
-  .terminal .cmd { color: var(--text); }
-  .terminal .cmd::before { content: "> "; color: var(--muted); }
-  .terminal .ok { color: var(--ok); }
-  .terminal .erro { color: var(--erro); }
-  .passos { counter-reset: passo; list-style: none; display: grid; gap: 12px; }
-  .passos li { counter-increment: passo; display: flex; gap: 12px; color: var(--muted); }
-  .passos li::before {
-    content: counter(passo); flex: none;
-    width: 24px; height: 24px; border-radius: 9999px;
-    background: var(--surface-2); color: var(--text);
-    font-size: 12px; line-height: 24px; text-align: center;
+  nav button {
+    background: var(--surface); color: var(--text); border: 1px solid var(--line);
+    border-radius: 10px; width: 40px; height: 40px; font-size: 18px; cursor: pointer;
+    transition: background 200ms var(--curva);
   }
-  .passos b { color: var(--text); font-weight: 500; }
-  .passos li { transition: color 300ms var(--curva); }
-  .passos li::before { transition: background-color 300ms var(--curva), color 300ms var(--curva); }
-  .passos li.atual { color: var(--text); }
-  .passos li.atual::before { background: var(--fifo); color: #000000; }
-
-  /* ---------- Demonstração animada ---------- */
-  .demo-grade { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: start; gap: 32px; }
-  .janela { background: #000000; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
-  .janela-barra {
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    padding: 8px 8px 8px 16px; background: var(--surface); border-bottom: 1px solid var(--line);
-  }
-  .janela-titulo { font-family: "Geist Mono", monospace; font-size: 12px; line-height: 16px; color: var(--muted); }
-  .controles { display: flex; gap: 4px; }
-  .controles button {
-    border: 0; cursor: pointer; color: var(--text); background: transparent;
-    font: inherit; font-size: 12px; line-height: 16px; font-weight: 600;
-    padding: 6px 10px; border-radius: 9999px;
-    transition: background-color 300ms var(--curva), transform 300ms var(--curva);
-  }
-  .controles button:hover { background: var(--surface-2); }
-  .controles button:active { transform: scale(0.98); }
-  .controles button:focus-visible { outline: 2px solid var(--fifo); outline-offset: 2px; }
-  .tela {
-    border: 0; border-radius: 0; padding: 16px;
-    height: clamp(240px, 48vh, 440px); overflow: auto;
-    font-size: 13px; line-height: 18px;
-    scrollbar-width: thin; scrollbar-color: var(--line) transparent;
-  }
-  .tela .menu { color: #6E6E6E; }
-  .tela .status { color: var(--muted); }
-  .tela .prog { color: var(--text); font-weight: 500; }
-  .tela .entrada { color: var(--text); font-weight: 500; }
-  .tela .lifo { color: var(--lifo); }
-  .cursor {
-    display: inline-block; width: 8px; height: 15px; margin-left: 1px;
-    background: #D6D6D6; vertical-align: -3px;
-    animation: piscar 1s steps(1) infinite;
-  }
-  @keyframes piscar { 50% { opacity: 0; } }
-  .lado { display: grid; gap: 24px; }
-  .estado { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 8px; }
-  .medidor {
-    display: grid; gap: 2px; padding: 8px 12px;
-    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
-    transition: border-color 300ms var(--curva), background-color 300ms var(--curva);
-  }
-  .medidor span { font-size: 12px; line-height: 16px; color: var(--muted); }
-  .medidor b { font-family: "Geist Mono", monospace; font-size: 16px; line-height: 24px; font-weight: 500; }
-  .medidor:first-child b { font-size: 14px; }
-  .medidor.fifo b { color: var(--fifo); }
-  .medidor.lifo b { color: var(--lifo); }
-  .medidor.mudou { border-color: var(--muted); background: var(--surface-2); }
-
-  /* ---------- Navegação ---------- */
-  .nav {
-    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px; border-radius: 9999px;
-    background: rgba(39, 39, 39, 0.7); backdrop-filter: blur(16px);
-    border: 1px solid var(--line);
-  }
-  .nav button {
-    border: 0; cursor: pointer; color: var(--text);
-    background: transparent; font: inherit; font-size: 14px; line-height: 20px; font-weight: 600;
-    padding: 8px 12px; border-radius: 9999px;
-    transition: background-color 300ms var(--curva), transform 300ms var(--curva);
-  }
-  .nav button:hover { background: var(--surface-2); }
-  .nav button:active { transform: scale(0.98); }
-  .nav button:focus-visible { outline: 2px solid var(--fifo); outline-offset: 2px; }
-  .nav button:disabled { opacity: 0.35; cursor: default; background: transparent; }
-  .pontos { display: flex; gap: 8px; padding: 0 8px; }
-  .ponto {
-    width: 8px; height: 8px; border-radius: 9999px; padding: 0 !important;
-    background: var(--line) !important;
-    transition: transform 300ms var(--curva), background-color 300ms var(--curva);
-  }
-  .ponto[aria-current="true"] { background: var(--text) !important; transform: scale(1.25); }
-  .contador { font-family: "Geist Mono", monospace; font-size: 12px; line-height: 16px; color: var(--muted); padding: 0 8px; }
+  nav button:hover { background: var(--surface-2); }
+  nav button:focus-visible { outline: 2px solid var(--lifo); outline-offset: 2px; }
+  .barra { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--lifo); transition: width 500ms var(--curva); }
 
   @media (max-width: 900px) {
-    body { overflow: auto; }
-    .slide { position: relative; opacity: 1; transform: none; pointer-events: auto; padding: 48px 24px; }
-    .grade > * { min-width: 0; }
-    .terminal { overflow-x: auto; }
-    .diagrama { flex-wrap: wrap; }
-    .slide.saindo { transform: none; }
-    .g2, .g3, .g4, .demo-grade { grid-template-columns: 1fr; }
-    .tela { height: 360px; }
-    .titulo, .capa .titulo { font-size: 36px; line-height: 40px; }
-    h2 { font-size: 30px; line-height: 36px; }
-    .nav { display: none; }
+    body { overflow: auto; font-size: 16px; }
+    .slide { position: relative; opacity: 1; transform: none; pointer-events: auto; padding: 48px 24px; min-height: 100vh; border-bottom: 1px solid var(--line); }
+    h1 { font-size: 40px; } h2 { font-size: 28px; }
+    .g2, .g3, .g4 { grid-template-columns: 1fr; }
+    nav, .barra { display: none; }
+    .caixas.vertical { width: 100%; }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .slide, .slide.saindo { transform: none !important; transition: opacity 300ms var(--curva); }
-    .cursor { animation: none; }
-  }
+  @media (prefers-reduced-motion: reduce) { .slide, .barra { transition: none; } }
 </style>
 </head>
 <body>
-<a class="pular" href="#slides">Pular para o conteúdo</a>
-
 <main id="slides">
 
-  <!-- 1. Problema -->
-  <section class="slide capa ativo" aria-label="Slide 1: o problema">
-    <p class="rotulo">ALGORITMOS · SENAC · 2º SEMESTRE 2026</p>
-    <h1 class="titulo">Um banco que atende<br>na ordem de chegada<br>e desfaz o último erro</h1>
-    <p class="sub">Sistema de linha de comando em C que recebe saques, depósitos, transferências e pagamentos, processa em fila e permite estornar a última operação.</p>
-    <div class="grade g3" style="margin-top: 48px; max-width: 1000px;">
-      <div class="cartao">
-        <span class="etiqueta fifo">FILA · FIFO</span>
-        <h3>Justiça no atendimento</h3>
-        <p>Quem pediu primeiro é atendido primeiro. A ordem muda o resultado: dois saques podem disputar o mesmo saldo.</p>
-      </div>
-      <div class="cartao">
-        <span class="etiqueta lifo">PILHA · LIFO</span>
-        <h3>Desfazer com segurança</h3>
-        <p>O estorno desfaz a operação mais recente. Assim nenhuma operação posterior depende do dinheiro que voltou.</p>
-      </div>
-      <div class="cartao">
-        <span class="etiqueta">TEMPO SIMULADO</span>
-        <h3>Pagamentos com data</h3>
-        <p>Agendados esperam a data chegar. A data avança por comando, então a demonstração é sempre igual.</p>
-      </div>
-    </div>
-  </section>
+<!-- 1. Capa -->
+<section class="slide" aria-label="Capa">
+  <p class="rotulo">EP de Algoritmos · Senac · 2026</p>
+  <h1>Transações bancárias<br>com pilha e fila em C</h1>
+  <p class="muted" style="margin-top:24px;max-width:640px">Uma demonstração no terminal onde clientes depositam, sacam, transferem, pagam (na hora ou agendado) e estornam. Cada estrutura de dados resolve um problema real do banco.</p>
+</section>
 
-  <!-- 2. Estruturas -->
-  <section class="slide" aria-label="Slide 2: as estruturas">
-    <p class="rotulo">ESTRUTURAS DE DADOS</p>
-    <h2>Cada estrutura tem um motivo para existir</h2>
-    <div class="grade g4">
-      <div class="cartao">
-        <span class="etiqueta fifo">fila.c</span>
-        <h3>Fila FIFO</h3>
-        <p>Vetor circular com <code>inicio</code> e <code>quantidade</code>. Pedidos imediatos.</p>
-        <div class="diagrama fila"><span class="seta">sai</span><span class="caixa">#1</span><span class="caixa">#2</span><span class="caixa">#3</span><span class="seta">entra</span></div>
-        <p class="mono" style="font-size: 12px; line-height: 16px;">enfileirar · desenfileirar</p>
-      </div>
-      <div class="cartao">
-        <span class="etiqueta lifo">pilha.c</span>
-        <h3>Pilha LIFO</h3>
-        <p>Lista encadeada. Só operações efetivadas, com saldos anteriores.</p>
-        <div class="diagrama pilha"><span class="caixa">#1 depósito</span><span class="caixa">#3 transferência</span><span class="caixa">#5 pagamento ← topo</span></div>
-        <p class="mono" style="font-size: 12px; line-height: 16px;">empilhar · desempilhar · topo</p>
-      </div>
-      <div class="cartao">
-        <span class="etiqueta">agendados.c</span>
-        <h3>Fila por data</h3>
-        <p>Lista mantida em ordem: cada agendado entra direto na posição certa. Mesma data sai pela ordem de chegada.</p>
-        <div class="diagrama"><span class="caixa">15/11</span><span class="caixa">20/11</span><span class="caixa">20/11</span></div>
-      </div>
-      <div class="cartao">
-        <span class="etiqueta">historico.c</span>
-        <h3>Histórico</h3>
-        <p>Lista encadeada com inserção no fim. Guarda tudo, inclusive recusados e estornos.</p>
-        <div class="diagrama"><span class="caixa">1º</span><span class="seta">→</span><span class="caixa">2º</span><span class="seta">→</span><span class="caixa">3º</span></div>
-      </div>
-    </div>
-    <div class="caminho">
-      <span class="caixa">pedido</span><span class="seta">→</span>
-      <span class="caixa" style="color: var(--fifo);">fila FIFO</span><span class="seta">→</span>
-      <span class="caixa">processar</span><span class="seta">→ efetivado →</span>
-      <span class="caixa" style="color: var(--lifo);">pilha</span><span class="seta">→ estorno desfaz o topo</span>
-    </div>
-  </section>
+<!-- 2. Problema -->
+<section class="slide" aria-label="O problema">
+  <p class="rotulo">O problema</p>
+  <h2>Um banco precisa responder a três perguntas</h2>
+  <div class="grade g3">
+    <div class="cartao"><h3><span class="marca" style="background:var(--fifo)"></span>Quem é atendido primeiro?</h3><p>Pedidos chegam o tempo todo. A ordem precisa ser justa, e ela decide quem fica sem saldo quando dois pedidos disputam o mesmo dinheiro.</p></div>
+    <div class="cartao"><h3><span class="marca" style="background:var(--lifo)"></span>Como desfazer um erro?</h3><p>O estorno precisa desfazer a última operação efetivada sem deixar os saldos inconsistentes.</p></div>
+    <div class="cartao"><h3><span class="marca" style="background:var(--agenda)"></span>E as contas do mês?</h3><p>Pagamentos agendados executam na data certa, na ordem certa, mesmo quando caem no mesmo dia.</p></div>
+  </div>
+</section>
 
-  <!-- 3. Demonstração -->
-  <section class="slide" aria-label="Slide 3: demonstração">
-    <p class="rotulo">DEMONSTRAÇÃO AO VIVO</p>
-    <h2>O programa rodando no terminal</h2>
-    <div class="grade demo-grade">
-      <div class="janela">
-        <div class="janela-barra">
-          <span class="janela-titulo">banco.exe &lt; demo/demo.txt</span>
-          <div class="controles">
-            <button type="button" id="demo-pausa">Pausar</button>
-            <button type="button" id="demo-reiniciar">Reiniciar</button>
-            <button type="button" id="demo-vel" aria-label="Velocidade: 1x">1x</button>
-          </div>
-        </div>
-        <div class="terminal tela" id="tela" role="log" aria-label="Saída real do programa, reproduzida em animação"></div>
-      </div>
-      <div class="lado">
-        <div class="estado" aria-label="Estado das estruturas no programa">
-          <div class="medidor"><span>Data</span><b id="m-data">13/11/2026</b></div>
-          <div class="medidor fifo"><span>Fila</span><b id="m-fila">0</b></div>
-          <div class="medidor"><span>Agendados</span><b id="m-agend">0</b></div>
-          <div class="medidor lifo"><span>Pilha</span><b id="m-pilha">0</b></div>
-        </div>
-        <ol class="passos" id="passos">
-          <li><span><b>Enfileirar quatro pedidos</b> e mostrar a fila na ordem de chegada.</span></li>
-          <li><span><b>Processar a fila:</b> o saque sem saldo é recusado e não entra na pilha.</span></li>
-          <li><span><b>Estornar:</b> sai o pagamento #5, o topo. O saldo volta ao valor anterior.</span></li>
-          <li><span><b>Agendar três pagamentos</b> fora de ordem e ver a lista ordenada por data.</span></li>
-          <li><span><b>Cancelar um agendado</b> e avançar a data: os vencidos entram na fila.</span></li>
-          <li><span><b>Histórico completo</b> e estornos até a pilha esvaziar.</span></li>
-        </ol>
-      </div>
-    </div>
-  </section>
+<!-- 3. Visão geral -->
+<section class="slide" aria-label="Visão geral">
+  <p class="rotulo">Visão geral</p>
+  <h2>O caminho de cada operação</h2>
+  <div class="fluxo" style="margin-bottom:32px">
+    <div class="no"><b>Cliente pede</b><small>depósito, saque, transf., pagamento</small></div>
+    <span class="seta">→</span>
+    <div class="no" style="border-color:var(--fifo)"><b>FILA</b><small>espera na ordem de chegada</small></div>
+    <span class="seta">→</span>
+    <div class="no"><b>Tem saldo?</b><small>processar o 1º da fila</small></div>
+    <span class="seta">→</span>
+    <div class="no" style="border-color:var(--lifo)"><b>PILHA</b><small>efetivadas, para estorno</small></div>
+    <span class="seta">→</span>
+    <div class="no" style="border-color:var(--lista)"><b>HISTÓRICO</b><small>lista encadeada</small></div>
+  </div>
+  <div class="fluxo">
+    <div class="no"><b>Cliente agenda</b><small>pagamento com data futura</small></div>
+    <span class="seta">→</span>
+    <div class="no" style="border-color:var(--agenda)"><b>AGENDA</b><small>ordenada com qsort</small></div>
+    <span class="seta">→</span>
+    <div class="no"><b>Data chega</b><small>executa os vencidos</small></div>
+    <span class="seta">→</span>
+    <div class="no" style="border-color:var(--lista)"><b>HISTÓRICO</b><small>agendado não entra na pilha</small></div>
+  </div>
+</section>
 
-  <!-- 4. Casos extremos -->
-  <section class="slide" aria-label="Slide 4: casos extremos">
-    <p class="rotulo">CASOS EXTREMOS · 63 TESTES AUTOMATIZADOS</p>
-    <h2>O que acontece quando algo dá errado</h2>
-    <div class="grade g3">
-      <div class="cartao">
-        <h3>Saldo e valores</h3>
-        <ul>
-          <li>Saldo insuficiente: recusado, nenhum saldo muda</li>
-          <li>Valor zero ou negativo: recusado</li>
-          <li>Valores em centavos inteiros, sem erro de arredondamento</li>
-        </ul>
-      </div>
-      <div class="cartao">
-        <h3>Transferência</h3>
-        <ul>
-          <li>Mesma conta ou conta inexistente: recusada</li>
-          <li>Tudo ou nada: se o crédito falhar, o débito é desfeito</li>
-          <li>Estorno devolve os dois saldos</li>
-        </ul>
-      </div>
-      <div class="cartao">
-        <h3>Pilha</h3>
-        <ul>
-          <li>Pilha vazia: o sistema informa e nada muda</li>
-          <li>Pedido recusado nunca entra na pilha</li>
-          <li>Dinheiro do depósito já usado: estorno recusado e operação fica no topo</li>
-        </ul>
-      </div>
-      <div class="cartao">
-        <h3>Fila</h3>
-        <ul>
-          <li>Fila vazia: processar avisa que não há pedidos</li>
-          <li>Fila cheia (100): novo pedido recusado</li>
-          <li>Ordem mantida quando o vetor circular dá a volta</li>
-        </ul>
-      </div>
-      <div class="cartao">
-        <h3>Agendados</h3>
-        <ul>
-          <li>Data de hoje, passada ou inválida (31/11): recusada</li>
-          <li>Mesma data: sai quem agendou primeiro</li>
-          <li>Cancelado antes de executar: não passa pela pilha</li>
-        </ul>
-      </div>
-      <div class="cartao">
-        <h3>Entrada do usuário</h3>
-        <ul>
-          <li>Texto no lugar de número: pergunta de novo</li>
-          <li>Aceita 150, 150,50 e 150.50</li>
-          <li>Datas validadas, inclusive ano bissexto</li>
-        </ul>
-      </div>
+<!-- 4. Struct -->
+<section class="slide" aria-label="A struct Operacao">
+  <p class="rotulo">Base de tudo</p>
+  <div class="grade g2" style="align-items:center">
+    <div>
+      <h2>Uma struct é uma ficha com vários campos</h2>
+      <p class="muted">Cada pedido vira uma <code>Operacao</code>. A mesma ficha passa pela fila, pela pilha, pela agenda e pelo histórico.</p>
+      <p class="muted" style="margin-top:16px">Regra única para movimentar dinheiro: <b style="color:var(--text)">sai da origem e entra no destino</b>. Depósito não tem origem e saque não tem destino.</p>
     </div>
-  </section>
+<pre><span class="k">typedef struct</span> {
+    <span class="k">int</span>    numero;       <span class="c">/* ordem de chegada  */</span>
+    <span class="k">int</span>    tipo;         <span class="c">/* TIPO_SAQUE...     */</span>
+    <span class="k">int</span>    contaOrigem;  <span class="c">/* de onde sai       */</span>
+    <span class="k">int</span>    contaDestino; <span class="c">/* para onde vai     */</span>
+    <span class="k">double</span> valor;
+    <span class="k">int</span>    data;         <span class="c">/* AAAAMMDD (agenda) */</span>
+} Operacao;</pre>
+  </div>
+</section>
 
-  <!-- 5. Aprendizados -->
-  <section class="slide" aria-label="Slide 5: o que aprendemos">
-    <p class="rotulo">O QUE APRENDEMOS</p>
-    <h2>A estrutura certa decide a regra de negócio</h2>
-    <div class="grade g2">
-      <div class="cartao">
-        <h3>Sobre estruturas</h3>
-        <ul>
-          <li>FIFO garante que a ordem de chegada define quem usa o saldo primeiro.</li>
-          <li>LIFO garante que o estorno nunca desfaz algo de que uma operação posterior depende.</li>
-          <li>Vetor circular é simples quando há limite; lista encadeada cresce conforme a necessidade.</li>
-          <li>Inserção ordenada evita reordenar a lista inteira a cada agendamento.</li>
-        </ul>
-      </div>
-      <div class="cartao">
-        <h3>Sobre o processo</h3>
-        <ul>
-          <li>Escrever o resultado esperado antes de rodar o teste revelou erros cedo.</li>
-          <li>Validar tudo antes de alterar saldo deixa o sistema consistente.</li>
-          <li>Um bug real: a ordem de avaliação dos argumentos em C não é garantida.</li>
-          <li>Todo uso de IA está registrado em <code>processo-ia.md</code>, por iteração.</li>
-        </ul>
+<!-- 5. Fila -->
+<section class="slide" aria-label="Fila FIFO">
+  <p class="rotulo" style="color:var(--fifo)">Fila · FIFO</p>
+  <div class="grade g2" style="align-items:center">
+    <div>
+      <h2>Quem pediu primeiro é atendido primeiro</h2>
+      <p class="muted">Carla tem R$ 50 e pede dois saques. O primeiro da fila leva o dinheiro e o segundo é recusado. Se a ordem fosse outra, o resultado seria outro. Por isso a fila não é decorativa.</p>
+      <div class="caixas" style="margin-top:24px;flex-wrap:wrap">
+        <div class="caixa f">#1 saque 40 ✓</div>
+        <div class="caixa x">#2 saque 30 ✗ saldo</div>
+        <div class="caixa f">#3 transf. 150 ✓</div>
       </div>
     </div>
-  </section>
+<pre><span class="c">/* vetor circular: o fim "dá a volta" */</span>
+fim = (f->inicio + f->quantidade)
+      % CAPACIDADE_FILA;
+f->itens[fim] = op;
+f->quantidade++;
+
+<span class="c">/* desenfileirar: sai o do início */</span>
+*saida = f->itens[f->inicio];
+f->inicio = (f->inicio + <span class="v">1</span>) % CAPACIDADE_FILA;
+f->quantidade--;</pre>
+  </div>
+</section>
+
+<!-- 6. Pilha -->
+<section class="slide" aria-label="Pilha LIFO">
+  <p class="rotulo" style="color:var(--lifo)">Pilha · LIFO</p>
+  <div class="grade g2" style="align-items:center">
+    <div>
+      <h2>O estorno desfaz a última efetivada</h2>
+      <p class="muted">Cada operação efetivada vai para o topo. Desfazer na ordem inversa sempre leva a um estado que já existiu, então os saldos ficam consistentes.</p>
+      <div class="caixas vertical" style="margin-top:24px">
+        <div class="caixa p">TOPO → #3 transferência 150</div>
+        <div class="caixa p" style="opacity:.6">#1 saque 40</div>
+      </div>
+      <p class="muted" style="margin-top:16px;font-size:16px">Pilha vazia → <span class="mono" style="color:var(--text)">"Nada a estornar."</span></p>
+    </div>
+<pre><span class="k">int</span> <span class="p">desempilhar</span>(Pilha *p, Operacao *saida)
+{
+    <span class="k">if</span> (pilhaVazia(p)) {
+        <span class="k">return</span> <span class="v">0</span>;  <span class="c">/* nada a estornar */</span>
+    }
+    p->quantidade--;
+    *saida = p->itens[p->quantidade];
+    <span class="k">return</span> <span class="v">1</span>;
+}</pre>
+  </div>
+</section>
+
+<!-- 7. Ponteiro -->
+<section class="slide" aria-label="Ponteiros">
+  <p class="rotulo">Conceito novo</p>
+  <div class="grade g2" style="align-items:center">
+    <div>
+      <h2>Por que <code>Pilha *p</code>?</h2>
+      <p class="muted">Sem ponteiro, a função recebe uma <b style="color:var(--text)">cópia</b> da pilha, e o empilhamento se perde quando a função termina. Com o ponteiro, ela recebe o <b style="color:var(--text)">endereço</b> e altera a pilha verdadeira.</p>
+      <p class="muted" style="margin-top:16px">O mesmo truque serve para "devolver" a operação desempilhada pelo parâmetro <code>saida</code>.</p>
+    </div>
+<pre>Pilha efetivadas;
+Operacao desfeita;
+
+iniciarPilha(<span class="p">&amp;</span>efetivadas);   <span class="c">/* &amp; = endereço */</span>
+
+<span class="k">if</span> (desempilhar(<span class="p">&amp;</span>efetivadas, <span class="p">&amp;</span>desfeita)) {
+    imprimirOperacao(desfeita);
+} <span class="k">else</span> {
+    printf(<span class="v">"Nada a estornar.\n"</span>);
+}</pre>
+  </div>
+</section>
+
+<!-- 8. Agenda -->
+<section class="slide" aria-label="Agenda com qsort">
+  <p class="rotulo" style="color:var(--agenda)">Agenda · qsort</p>
+  <div class="grade g2" style="align-items:center">
+    <div>
+      <h2>qsort não é estável, então desempatamos</h2>
+      <p class="muted">Com datas iguais, o <code>qsort</code> pode trocar dois pagamentos de lugar. O <b style="color:var(--text)">número de entrada</b> é o segundo critério, o que mantém a ordem de chegada (FIFO) no mesmo dia.</p>
+      <table style="margin-top:24px">
+        <tr><th>Agendado como</th><th>Executa em</th></tr>
+        <tr><td>#4 · 10/11 · R$ 100</td><td>#5 · 08/11</td></tr>
+        <tr><td>#5 · 08/11 · R$ 50</td><td>#4 · 10/11</td></tr>
+        <tr><td>#6 · 10/11 · R$ 30</td><td>#6 · 10/11 (empate: #4 entrou antes)</td></tr>
+      </table>
+    </div>
+<pre><span class="k">int</span> <span class="a">compararAgendados</span>(<span class="k">const void</span> *a,
+                      <span class="k">const void</span> *b)
+{
+    <span class="k">const</span> Operacao *x = a, *y = b;
+
+    <span class="c">/* 1º: data mais cedo vem antes */</span>
+    <span class="k">if</span> (x->data &lt; y->data) <span class="k">return</span> -<span class="v">1</span>;
+    <span class="k">if</span> (x->data &gt; y->data) <span class="k">return</span>  <span class="v">1</span>;
+
+    <span class="c">/* 2º: empate -> quem entrou antes */</span>
+    <span class="k">if</span> (x->numero &lt; y->numero) <span class="k">return</span> -<span class="v">1</span>;
+    <span class="k">if</span> (x->numero &gt; y->numero) <span class="k">return</span>  <span class="v">1</span>;
+    <span class="k">return</span> <span class="v">0</span>;
+}</pre>
+  </div>
+</section>
+
+<!-- 9. Histórico -->
+<section class="slide" aria-label="Histórico em lista encadeada">
+  <p class="rotulo" style="color:var(--lista)">Histórico · lista encadeada</p>
+  <div class="grade g2" style="align-items:center">
+    <div>
+      <h2>Cresce sem limite, nó por nó</h2>
+      <p class="muted">Cada evento (efetivada, recusada, estornada, agendada, cancelada, paga) vira um nó criado com <code>malloc</code>. Guardamos o último nó para inserir no fim sem percorrer a lista. Ao sair, <code>free</code> devolve toda a memória.</p>
+      <div class="caixas" style="margin-top:24px;align-items:center;flex-wrap:wrap">
+        <div class="caixa">inicio</div><span class="seta">→</span>
+        <div class="caixa">nó 1</div><span class="seta">→</span>
+        <div class="caixa">nó 2</div><span class="seta">→</span>
+        <div class="caixa">nó 3</div><span class="seta">→</span>
+        <div class="caixa">NULL</div>
+      </div>
+    </div>
+<pre>NoHistorico *novo = malloc(<span class="k">sizeof</span>(NoHistorico));
+<span class="k">if</span> (novo == NULL) <span class="k">return</span> <span class="v">0</span>;
+novo->op = op;
+novo->proximo = NULL;
+
+<span class="k">if</span> (h->inicio == NULL)
+    h->inicio = novo;        <span class="c">/* 1º nó        */</span>
+<span class="k">else</span>
+    h->fim->proximo = novo;  <span class="c">/* liga no fim  */</span>
+h->fim = novo;</pre>
+  </div>
+</section>
+
+<!-- 10. Casos extremos -->
+<section class="slide" aria-label="Casos extremos">
+  <p class="rotulo">Casos extremos</p>
+  <h2>O que poderia dar errado, e o que o sistema faz</h2>
+  <table>
+    <tr><th>Situação</th><th>Resposta do sistema</th></tr>
+    <tr><td>Estornar sem nada efetivado</td><td><code>Nada a estornar.</code></td></tr>
+    <tr><td>Saldo insuficiente</td><td>Pedido recusado e registrado no histórico, sem mudar o saldo</td></tr>
+    <tr><td>Dois pagamentos agendados no mesmo dia</td><td>Executam na ordem de entrada (desempate do qsort)</td></tr>
+    <tr><td>Estornar depósito cujo dinheiro já foi gasto</td><td>Estorno recusado. A operação volta ao topo e nada muda</td></tr>
+    <tr><td>Cancelar agendado já executado</td><td>"Não há pagamento agendado com esse número"</td></tr>
+    <tr><td>Conta 0 ou inexistente, valor ≤ 0, <code>nan</code>, mesma conta</td><td>Recusado antes de entrar na fila</td></tr>
+    <tr><td>Letras no lugar de números, data 31/02</td><td>A pergunta é repetida</td></tr>
+  </table>
+</section>
+
+<!-- 11. Demo -->
+<section class="slide" aria-label="Demonstração">
+  <p class="rotulo">Demonstração · saída real do banco.exe</p>
+  <div class="grade g2">
+<pre><span class="c">Opção: 6   (processar toda a fila)</span>
+  <span class="v">[EFETIVADA]</span> #1 SAQUE    R$ 40.00 (conta 3)
+  <span class="e">[RECUSADA: saldo insuficiente]</span>
+             #2 SAQUE    R$ 30.00 (conta 3)
+  <span class="v">[EFETIVADA]</span> #3 TRANSF.  R$150.00 (1 -> 2)
+
+<span class="c">Opção: 11  (ver situação)</span>
+  PILHA de efetivadas
+   <span class="p">TOPO -&gt;</span> #3 TRANSFERÊNCIA R$ 150.00
+           #1 SAQUE         R$  40.00
+
+<span class="c">Opção: 7   (estornar)</span>
+  <span class="p">[ESTORNADA]</span> #3 TRANSFERÊNCIA R$ 150.00</pre>
+<pre><span class="c">Opção: 11  (agenda após 4 agendamentos)</span>
+  <span class="a">#5</span> PAGAMENTO R$  50.00  para 08/11/2026
+  <span class="a">#4</span> PAGAMENTO R$ 100.00  para 10/11/2026
+  <span class="a">#6</span> PAGAMENTO R$  30.00  para 10/11/2026
+  <span class="a">#7</span> PAGAMENTO R$  20.00  para 12/11/2026
+
+<span class="c">Opção: 9   cancelar #7  ·  Opção: 10  10/11/2026</span>
+  [AGENDADO PAGO] #5 ...  08/11/2026
+  [AGENDADO PAGO] #4 ...  10/11/2026
+  [AGENDADO PAGO] #6 ...  10/11/2026
+
+<span class="c">Opção: 7  ·  Opção: 7</span>
+  <span class="p">[ESTORNADA]</span> #1 SAQUE  R$ 40.00
+  Nada a estornar.</pre>
+  </div>
+  <p class="muted" style="margin-top:16px;font-size:15px">Roteiro completo: <span class="mono">banco.exe &lt; demo\entrada-demo.txt</span></p>
+</section>
+
+<!-- 12. Testes e organização -->
+<section class="slide" aria-label="Testes e organização">
+  <p class="rotulo">Qualidade</p>
+  <h2>62 verificações automáticas em 4 programas de teste</h2>
+  <div class="grade g4">
+    <div class="cartao"><h3>teste_pilha</h3><p>Pilha vazia, ordem LIFO 3→2→1, pilha cheia.</p></div>
+    <div class="cartao"><h3>teste_fila</h3><p>Ordem FIFO, fila cheia, vetor circular dando a volta.</p></div>
+    <div class="cartao"><h3>teste_agendados</h3><p>Datas iguais, cancelamento, só executa o que venceu.</p></div>
+    <div class="cartao"><h3>teste_sistema</h3><p>Saldo insuficiente, estorno impossível, validações, histórico, free.</p></div>
+  </div>
+  <p class="muted" style="margin-top:32px">Um módulo por estrutura: <span class="mono">pilha · fila · agendados · historico · sistema · entrada · main</span>. Compila sem avisos com <span class="mono">gcc -Wall -Wextra -std=c99</span>.</p>
+</section>
+
+<!-- 13. IA -->
+<section class="slide" aria-label="Uso de IA">
+  <p class="rotulo">Processo</p>
+  <h2>Como usamos IA no projeto</h2>
+  <ul class="lista" style="max-width:820px">
+    <li>As decisões de estrutura (fila, pilha, qsort com desempate, lista) foram da equipe. A IA implementou em incrementos pequenos.</li>
+    <li>Cada iteração está no <span class="mono">processo-ia.md</span>: pedido, solução, alteração, motivo e resultado.</li>
+    <li>Uma segunda IA (Codex) revisou o código e achou um bug real: digitar a conta 0 como origem de uma transferência criava dinheiro. Ele foi corrigido e ganhou teste.</li>
+    <li>O código é comentado para iniciantes: struct, ponteiro e malloc/free são explicados onde aparecem pela primeira vez.</li>
+  </ul>
+</section>
+
+<!-- 14. Fim -->
+<section class="slide" aria-label="Encerramento">
+  <p class="rotulo">Resumo</p>
+  <h1 style="font-size:52px;max-width:900px">Fila para a ordem justa. Pilha para desfazer com segurança.</h1>
+  <p class="muted" style="margin-top:24px">Obrigado. Perguntas?</p>
+</section>
 
 </main>
 
-<nav class="nav" aria-label="Navegação dos slides">
-  <button type="button" id="anterior" aria-label="Slide anterior">Anterior</button>
-  <div class="pontos" id="pontos"></div>
-  <span class="contador" id="contador">1 / 5</span>
-  <button type="button" id="proximo" aria-label="Próximo slide">Próximo</button>
+<nav aria-label="Navegação dos slides">
+  <button id="anterior" aria-label="Slide anterior">←</button>
+  <span id="contador" aria-live="polite">1 / 14</span>
+  <button id="proximo" aria-label="Próximo slide">→</button>
 </nav>
+<div class="barra" id="barra"></div>
 
-<!-- Saída real de "banco.exe < demo/demo.txt", reproduzida pela animação do slide 3 -->
-<script type="text/plain" id="transcricao">
-=== Sistema Bancário: Pilhas e Filas ===
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 0
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 1
-
-Conta 1 | Ana Souza            | saldo: R$ 1000,00
-Conta 2 | Bruno Lima           | saldo: R$ 250,50
-Conta 3 | Carla Dias           | saldo: R$ 50,00
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 0
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 2
-
-  Conta: 3
-  Valor (R$): 100
-  Pedido #1 entrou no fim da fila.
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 1 | Agendados: 0 | Pilha: 0
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 3
-
-  Conta: 3
-  Valor (R$): 500
-  Pedido #2 entrou no fim da fila.
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 2 | Agendados: 0 | Pilha: 0
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 5
-
-  Conta de origem: 1
-  Conta de destino: 2
-  Valor (R$): 200
-  Pedido #3 entrou no fim da fila.
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 3 | Agendados: 0 | Pilha: 0
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 5
-
-  Conta de origem: 2
-  Conta de destino: 2
-  Valor (R$): 10
-  Pedido #4 recusado: origem e destino são a mesma conta.
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 3 | Agendados: 0 | Pilha: 0
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 4
-
-  Conta: 2
-  Valor (R$): 50,50
-  Pedido #5 entrou no fim da fila.
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 4 | Agendados: 0 | Pilha: 0
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 11
-
-  FILA FIFO (o primeiro sai primeiro):
-  1) #1 Depósito | conta 3 | R$ 100,00
-  2) #2 Saque | conta 3 | R$ 500,00
-  3) #3 Transferência | conta 1 -> 2 | R$ 200,00
-  4) #5 Pagamento | conta 2 | R$ 50,50
-  AGENDADOS (por data, empate pela chegada):
-  (nenhum pagamento agendado)
-  PILHA DE EFETIVADAS (o topo é estornado primeiro):
-  (pilha vazia)
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 4 | Agendados: 0 | Pilha: 0
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 7
-
-  #1 Depósito | conta 3 | R$ 100,00 -> efetivado
-  #2 Saque | conta 3 | R$ 500,00 -> recusado: saldo insuficiente
-  #3 Transferência | conta 1 -> 2 | R$ 200,00 -> efetivado
-  #5 Pagamento | conta 2 | R$ 50,50 -> efetivado
-
-  Saldos depois do processamento:
-Conta 1 | Ana Souza            | saldo: R$ 800,00
-Conta 2 | Bruno Lima           | saldo: R$ 400,00
-Conta 3 | Carla Dias           | saldo: R$ 150,00
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 3
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 11
-
-  FILA FIFO (o primeiro sai primeiro):
-  (fila vazia)
-  AGENDADOS (por data, empate pela chegada):
-  (nenhum pagamento agendado)
-  PILHA DE EFETIVADAS (o topo é estornado primeiro):
-  topo -> #5 Pagamento | conta 2 | R$ 50,50
-          #3 Transferência | conta 1 -> 2 | R$ 200,00
-          #1 Depósito | conta 3 | R$ 100,00
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 3
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 9
-
-  Estornado: #5 Pagamento | conta 2 | R$ 50,50
-  Conta 2 voltou para R$ 450,50.
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 2
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 6
-
-  Conta: 1
-  Valor (R$): 80
-  Data do pagamento (dd/mm/aaaa): 20/11/2026
-  Pagamento #6 agendado para 20/11/2026.
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 0 | Agendados: 1 | Pilha: 2
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 6
-
-  Conta: 2
-  Valor (R$): 30
-  Data do pagamento (dd/mm/aaaa): 15/11/2026
-  Pagamento #7 agendado para 15/11/2026.
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 0 | Agendados: 2 | Pilha: 2
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 6
-
-  Conta: 3
-  Valor (R$): 10
-  Data do pagamento (dd/mm/aaaa): 20/11/2026
-  Pagamento #8 agendado para 20/11/2026.
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 0 | Agendados: 3 | Pilha: 2
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 6
-
-  Conta: 1
-  Valor (R$): 10
-  Data do pagamento (dd/mm/aaaa): 10/11/2026
-  Agendamento #9 recusado: a data precisa ser depois de hoje.
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 0 | Agendados: 3 | Pilha: 2
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 11
-
-  FILA FIFO (o primeiro sai primeiro):
-  (fila vazia)
-  AGENDADOS (por data, empate pela chegada):
-  1) #7 Pagamento | conta 2 | R$ 30,00 | para 15/11/2026
-  2) #6 Pagamento | conta 1 | R$ 80,00 | para 20/11/2026
-  3) #8 Pagamento | conta 3 | R$ 10,00 | para 20/11/2026
-  PILHA DE EFETIVADAS (o topo é estornado primeiro):
-  topo -> #3 Transferência | conta 1 -> 2 | R$ 200,00
-          #1 Depósito | conta 3 | R$ 100,00
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 0 | Agendados: 3 | Pilha: 2
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 10
-
-  Número do pagamento agendado: 8
-  Agendamento #8 cancelado.
-
-============================================================
- Data simulada: 13/11/2026 | Fila: 0 | Agendados: 2 | Pilha: 2
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 8
-
-  Avançar quantos dias? 7
-  Nova data: 20/11/2026. 2 pagamento(s) agendado(s) entraram na fila.
-
-============================================================
- Data simulada: 20/11/2026 | Fila: 2 | Agendados: 0 | Pilha: 2
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 7
-
-  #7 Pagamento | conta 2 | R$ 30,00 | para 15/11/2026 -> efetivado
-  #6 Pagamento | conta 1 | R$ 80,00 | para 20/11/2026 -> efetivado
-
-  Saldos depois do processamento:
-Conta 1 | Ana Souza            | saldo: R$ 720,00
-Conta 2 | Bruno Lima           | saldo: R$ 420,50
-Conta 3 | Carla Dias           | saldo: R$ 150,00
-
-============================================================
- Data simulada: 20/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 4
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 12
-
-  [13/11/2026] #4 Transferência | conta 2 -> 2 | R$ 10,00 -> recusado: origem e destino são a mesma conta
-  [13/11/2026] #1 Depósito | conta 3 | R$ 100,00 -> efetivado
-  [13/11/2026] #2 Saque | conta 3 | R$ 500,00 -> recusado: saldo insuficiente
-  [13/11/2026] #3 Transferência | conta 1 -> 2 | R$ 200,00 -> efetivado
-  [13/11/2026] #5 Pagamento | conta 2 | R$ 50,50 -> efetivado
-  [13/11/2026] #5 Pagamento | conta 2 | R$ 50,50 -> estornado (operação desfeita)
-  [13/11/2026] #6 Pagamento | conta 1 | R$ 80,00 | para 20/11/2026 -> agendado
-  [13/11/2026] #7 Pagamento | conta 2 | R$ 30,00 | para 15/11/2026 -> agendado
-  [13/11/2026] #8 Pagamento | conta 3 | R$ 10,00 | para 20/11/2026 -> agendado
-  [13/11/2026] #9 Pagamento | conta 1 | R$ 10,00 | para 10/11/2026 -> recusado: a data precisa ser depois de hoje
-  [13/11/2026] #8 Pagamento | conta 3 | R$ 10,00 | para 20/11/2026 -> agendamento cancelado
-  [20/11/2026] #7 Pagamento | conta 2 | R$ 30,00 | para 15/11/2026 -> efetivado
-  [20/11/2026] #6 Pagamento | conta 1 | R$ 80,00 | para 20/11/2026 -> efetivado
-
-============================================================
- Data simulada: 20/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 4
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 9
-
-  Estornado: #6 Pagamento | conta 1 | R$ 80,00 | para 20/11/2026
-  Conta 1 voltou para R$ 800,00.
-
-============================================================
- Data simulada: 20/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 3
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 9
-
-  Estornado: #7 Pagamento | conta 2 | R$ 30,00 | para 15/11/2026
-  Conta 2 voltou para R$ 450,50.
-
-============================================================
- Data simulada: 20/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 2
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 9
-
-  Estornado: #3 Transferência | conta 1 -> 2 | R$ 200,00
-  Conta 1 voltou para R$ 1000,00; conta 2 voltou para R$ 250,50.
-
-============================================================
- Data simulada: 20/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 1
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 9
-
-  Estornado: #1 Depósito | conta 3 | R$ 100,00
-  Conta 3 voltou para R$ 50,00.
-
-============================================================
- Data simulada: 20/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 0
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 9
-
-  nada a estornar: nenhuma operação efetivada.
-
-============================================================
- Data simulada: 20/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 0
-============================================================
-  1) Listar contas            7) Processar fila de pedidos
-  2) Depósito                 8) Avançar data simulada
-  3) Saque                    9) Estornar última operação
-  4) Pagamento imediato      10) Cancelar pagamento agendado
-  5) Transferência           11) Ver fila, agendados e pilha
-  6) Agendar pagamento       12) Histórico
-  0) Sair
-Opção: 0
-
-
-Até logo!
-</script>
-<script type="text/plain" id="entradas">
-1
-2
-3
-100
-3
-3
-500
-5
-1
-2
-200
-5
-2
-2
-10
-4
-2
-50,50
-11
-7
-11
-9
-6
-1
-80
-20/11/2026
-6
-2
-30
-15/11/2026
-6
-3
-10
-20/11/2026
-6
-1
-10
-10/11/2026
-11
-10
-8
-8
-7
-7
-12
-9
-9
-9
-9
-9
-0
-</script>
 <script>
-  const slides = [...document.querySelectorAll('.slide')];
-  const pontos = document.getElementById('pontos');
+  const slides = Array.from(document.querySelectorAll('.slide'));
   const contador = document.getElementById('contador');
-  const anterior = document.getElementById('anterior');
-  const proximo = document.getElementById('proximo');
+  const barra = document.getElementById('barra');
   let atual = 0;
 
-  slides.forEach((_, i) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'ponto';
-    b.setAttribute('aria-label', 'Ir para o slide ' + (i + 1));
-    b.addEventListener('click', () => ir(i));
-    pontos.appendChild(b);
-  });
-
-  function ir(n) {
-    if (n < 0 || n >= slides.length || n === atual) return;
-    slides[atual].classList.remove('ativo');
-    slides[atual].classList.toggle('saindo', n > atual);
-    slides[n].classList.remove('saindo');
-    slides[n].classList.add('ativo');
-    atual = n;
-    atualizar();
-  }
-
-  function atualizar() {
-    [...pontos.children].forEach((p, i) => p.setAttribute('aria-current', i === atual ? 'true' : 'false'));
-    slides.forEach((s, i) => s.setAttribute('aria-hidden', i === atual ? 'false' : 'true'));
+  function mostrar(indice) {
+    atual = Math.max(0, Math.min(slides.length - 1, indice));
+    slides.forEach((s, i) => {
+      s.classList.toggle('ativo', i === atual);
+      s.setAttribute('aria-hidden', i === atual ? 'false' : 'true');
+    });
     contador.textContent = (atual + 1) + ' / ' + slides.length;
-    anterior.disabled = atual === 0;
-    proximo.disabled = atual === slides.length - 1;
+    barra.style.width = ((atual + 1) / slides.length * 100) + '%';
     history.replaceState(null, '', '#' + (atual + 1));
-    demo.verificar();
   }
 
-  anterior.addEventListener('click', () => ir(atual - 1));
-  proximo.addEventListener('click', () => ir(atual + 1));
+  document.getElementById('anterior').addEventListener('click', () => mostrar(atual - 1));
+  document.getElementById('proximo').addEventListener('click', () => mostrar(atual + 1));
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); ir(atual + 1); }
-    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); ir(atual - 1); }
-    if (e.key === 'Home') ir(0);
-    if (e.key === 'End') ir(slides.length - 1);
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); mostrar(atual + 1); }
+    if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); mostrar(atual - 1); }
+    if (e.key === 'Home') mostrar(0);
+    if (e.key === 'End') mostrar(slides.length - 1);
   });
-
-  // ---------- Demonstração: reproduz a saída real de "banco.exe < demo/demo.txt" ----------
-  const demo = (() => {
-    const tela = document.getElementById('tela');
-    const secao = tela.closest('.slide');
-    const passos = [...document.querySelectorAll('#passos li')];
-    const botaoPausa = document.getElementById('demo-pausa');
-    const botaoVel = document.getElementById('demo-vel');
-    const medidores = {
-      data: document.getElementById('m-data'), fila: document.getElementById('m-fila'),
-      agend: document.getElementById('m-agend'), pilha: document.getElementById('m-pilha'),
-    };
-    const linhas = document.getElementById('transcricao').textContent.replace(/^\n|\n$/g, '').split('\n');
-    const entradas = document.getElementById('entradas').textContent.trim().split('\n');
-    const celular = matchMedia('(max-width: 900px)');
-    const instantaneo = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const CANCELADO = Symbol('cancelado');
-    const VELOCIDADES = [1, 2, 4];
-
-    // Separa a transcrição em blocos de menu, linhas de saída e entradas digitadas.
-    // Dentro do menu só a linha "Opção:" recebe entrada (a linha de status também termina em ": N").
-    const acoes = [];
-    let k = 0, menu = null;
-    for (const l of linhas) {
-      const v = entradas[k];
-      const prefixo = v !== undefined && l.endsWith(v) ? l.slice(0, l.length - v.length) : null;
-      if (prefixo !== null && /[:?] $/.test(prefixo) && (!menu || prefixo === 'Opção: ')) {
-        if (menu) { acoes.push({ tipo: 'menu', linhas: menu }); menu = null; }
-        acoes.push({ tipo: 'digitar', prefixo, valor: v, opcao: prefixo === 'Opção: ' });
-        k++;
-      } else if (menu) menu.push(l);
-      else if (/^=+$/.test(l)) menu = [l];
-      else acoes.push({ tipo: 'linha', texto: l });
-    }
-
-    // Opção do menu -> passo da lista ao lado (só avança, nunca volta).
-    const PASSO_DA_OPCAO = { 2: 0, 3: 0, 4: 0, 5: 0, 11: 0, 7: 1, 9: 2, 6: 3, 10: 4, 8: 4, 12: 5 };
-
-    let geracao = 0, vel = 1, pausadoPeloUsuario = false, visivel = false, iniciado = false;
-    const cursor = document.createElement('span');
-    cursor.className = 'cursor';
-
-    const pausado = () => pausadoPeloUsuario || !visivel;
-
-    function espera(ms, g) {
-      if (instantaneo) return Promise.resolve();
-      return new Promise((ok, falha) => {
-        let resta = ms, ultimo = performance.now();
-        (function tique(agora) {
-          if (g !== geracao) return falha(CANCELADO);
-          if (!pausado()) resta -= (agora - ultimo) * vel;
-          ultimo = agora;
-          if (resta <= 0) ok(); else requestAnimationFrame(tique);
-        })(ultimo);
-      });
-    }
-
-    const escapar = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    function colorir(t) {
-      let h = escapar(t);
-      if (/^=== /.test(t)) return '<span class="prog">' + h + '</span>';
-      h = h.replace(/-&gt; efetivado$/, '-&gt; <span class="ok">efetivado</span>');
-      h = h.replace(/(recusado:.*|nada a estornar:.*)$/, '<span class="erro">$1</span>');
-      h = h.replace(/(estornado \(operação desfeita\)|Estornado:)/, '<span class="lifo">$1</span>');
-      return h;
-    }
-
-    function escrever(html, classe) {
-      const pertoDoFim = tela.scrollHeight - tela.scrollTop - tela.clientHeight < 48;
-      const div = document.createElement('div');
-      if (classe) div.className = classe;
-      div.innerHTML = html;
-      div.appendChild(cursor);
-      tela.appendChild(div);
-      if (pertoDoFim) tela.scrollTop = tela.scrollHeight;
-      return div;
-    }
-
-    function medir(linhaStatus) {
-      const m = linhaStatus.match(/Data simulada: (\S+) \| Fila: (\d+) \| Agendados: (\d+) \| Pilha: (\d+)/);
-      if (!m) return;
-      [['data', m[1]], ['fila', m[2]], ['agend', m[3]], ['pilha', m[4]]].forEach(([chave, valor]) => {
-        const b = medidores[chave];
-        if (b.textContent === valor) return;
-        b.textContent = valor;
-        const caixa = b.parentElement;
-        caixa.classList.add('mudou');
-        setTimeout(() => caixa.classList.remove('mudou'), 600);
-      });
-    }
-
-    function marcarPasso(n) {
-      passos.forEach((li, i) => li.classList.toggle('atual', i === n));
-    }
-
-    async function rodar() {
-      const g = ++geracao;
-      let passo = -1;
-      tela.textContent = '';
-      tela.scrollTop = 0;
-      medir('Data simulada: 13/11/2026 | Fila: 0 | Agendados: 0 | Pilha: 0');
-      marcarPasso(-1);
-      try {
-        escrever('<span class="cmd">banco.exe &lt; demo/demo.txt</span>');
-        await espera(900, g);
-        for (const a of acoes) {
-          if (a.tipo === 'linha') {
-            escrever(colorir(a.texto) || ' ');
-            await espera(a.texto ? 70 : 25, g);
-          } else if (a.tipo === 'menu') {
-            for (const l of a.linhas) {
-              const status = l.startsWith(' Data simulada');
-              escrever(escapar(l) || ' ', status ? 'status' : 'menu');
-              if (status) medir(l);
-            }
-          } else {
-            const div = escrever(escapar(a.prefixo));
-            const digitado = document.createElement('span');
-            digitado.className = 'entrada';
-            div.insertBefore(digitado, cursor);
-            await espera(a.opcao ? 700 : 350, g);
-            for (const c of a.valor) {
-              digitado.textContent += c;
-              await espera(110, g);
-            }
-            if (a.opcao && a.valor in PASSO_DA_OPCAO) {
-              passo = Math.max(passo, PASSO_DA_OPCAO[a.valor]);
-              marcarPasso(passo);
-            }
-            await espera(300, g);
-          }
-        }
-        await espera(6000, g);
-        if (!instantaneo) rodar();
-      } catch (e) {
-        if (e !== CANCELADO) throw e;
-      }
-    }
-
-    botaoPausa.addEventListener('click', () => {
-      pausadoPeloUsuario = !pausadoPeloUsuario;
-      botaoPausa.textContent = pausadoPeloUsuario ? 'Continuar' : 'Pausar';
-    });
-    document.getElementById('demo-reiniciar').addEventListener('click', () => {
-      pausadoPeloUsuario = false;
-      botaoPausa.textContent = 'Pausar';
-      rodar();
-    });
-    botaoVel.addEventListener('click', () => {
-      vel = VELOCIDADES[(VELOCIDADES.indexOf(vel) + 1) % VELOCIDADES.length];
-      botaoVel.textContent = vel + 'x';
-      botaoVel.setAttribute('aria-label', 'Velocidade: ' + vel + 'x');
-    });
-
-    // No desktop a animação roda só com o slide ativo; no celular, quando o terminal aparece na tela.
-    let naTela = false;
-    new IntersectionObserver(([e]) => { naTela = e.isIntersecting; verificar(); }, { threshold: 0.3 }).observe(tela);
-
-    function verificar() {
-      visivel = celular.matches ? naTela : secao.classList.contains('ativo');
-      if (visivel && !iniciado) { iniciado = true; rodar(); }
-    }
-
-    return { verificar };
-  })();
 
   const inicial = parseInt(location.hash.slice(1), 10);
-  if (inicial >= 1 && inicial <= slides.length && inicial !== 1) {
-    slides[0].classList.remove('ativo');
-    slides[inicial - 1].classList.add('ativo');
-    atual = inicial - 1;
-  }
-  atualizar();
+  mostrar(Number.isFinite(inicial) ? inicial - 1 : 0);
 </script>
 </body>
 </html>
