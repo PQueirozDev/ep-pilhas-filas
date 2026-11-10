@@ -1,7 +1,32 @@
 # Diário do processo com IA
 
 Projeto: EP de Algoritmos (Senac): pilhas e filas aplicadas a transações bancárias.
-Formato de cada entrada: data · pedido · solução proposta · alteração · motivo · resultado.
+
+## Como a IA foi usada
+
+| Papel | Quem |
+|---|---|
+| Requisitos e decisões de estrutura (fila, pilha, qsort com desempate, lista encadeada) | equipe |
+| Implementação em incrementos pequenos, comentada para iniciantes | Claude (assistente de código) |
+| Revisão independente do código | Codex (segunda IA), com cada apontamento conferido antes de corrigir |
+| Verificação | testes automáticos em C (62 verificações) e no simulador (25 verificações) |
+
+As decisões da iteração 1 foram tratadas como fixas: nenhuma foi reaberta sem consultar a
+equipe. Cada entrada abaixo segue o formato **pedido · solução proposta · alteração · motivo ·
+resultado**.
+
+| # | Data | Assunto | Resultado |
+|---|---|---|---|
+| 1 | 05/11 | Recomeço, decisões e pilha de efetivadas | 11 verificações OK |
+| 2 | 05/11 | Ritmo de trabalho | incrementos seguidos, cada um testado |
+| 3 | 05/11 | Fila de pedidos imediatos (FIFO) | 10 verificações OK |
+| 4 | 05/11 | Agenda com qsort e desempate | 10 verificações OK |
+| 5 | 05/11 | Histórico em lista encadeada | testado no `teste_sistema` |
+| 6 | 05/11 | Sistema, menu e entrada | demonstração automática completa |
+| 7 | 05/11 | Revisão do Codex no projeto inteiro | 1 bug real corrigido; 62 verificações OK |
+| 8 | 05/11 | README e slides | slides publicados |
+| 9 | 10/11 | Simulador animado e slides novos | 25 verificações novas OK |
+| 10 | 10/11 | Vídeo da demonstração | MP4 gravado quadro a quadro |
 
 ---
 
@@ -13,7 +38,7 @@ mesmo repositório GitHub (`PQueirozDev/ep-pilhas-filas`) e o mesmo domínio Ver
 slides, mais tarde). Primeiro incremento: struct da operação + pilha de efetivadas + teste.
 Usar o Codex como assistente de revisão.
 
-**Decisões registradas (não serão reabertas sem consultar a equipe):**
+**Decisões da equipe (não serão reabertas sem consultá-la):**
 - Fila (FIFO) para pedidos imediatos: depósito, saque, transferência, pagamento imediato.
   Motivo: quem pediu primeiro é atendido primeiro.
 - Pilha (LIFO) de operações **efetivadas**, usada no estorno: estornar desfaz a última
@@ -52,22 +77,23 @@ criadas as pastas `src/` e `testes/` e os arquivos acima.
    número da operação desfeita e o teste verifica 3, 2, 1 e depois 0.
 
 **Resultado:** compila sem avisos (`gcc -Wall -Wextra -std=c99`); 11 verificações, todas OK.
-Ficou aguardando a previsão da equipe sobre a saída do teste (ver iteração 2).
 
 ---
 
-## Iteração 2 · 2026-11-05 · Mudança de fluxo: fazer tudo sem parar
+## Iteração 2 · 2026-11-05 · Ritmo de trabalho
 
-**Pedido:** "eu quero que você faça tudo, não que fique me perguntando, apenas faça".
+**Pedido:** com as decisões de estrutura já fechadas na iteração 1, seguir com os incrementos
+restantes em sequência, sem pausas entre eles.
 
-**Solução proposta:** abandonar as paradas por incremento e as perguntas de previsão. Implementar
-os incrementos restantes em sequência, testando cada um, e registrar tudo aqui.
+**Solução proposta:** cada incremento continua pequeno e só avança depois de compilar sem avisos
+e passar no próprio teste. Tudo fica registrado neste diário para a equipe acompanhar.
 
-**Alteração:** nenhuma no código; muda o processo.
+**Alteração:** nenhuma no código; muda só o ritmo.
 
-**Motivo:** pedido explícito da equipe para agilizar a entrega.
+**Motivo:** as escolhas que exigiam decisão da equipe já estavam tomadas; o que faltava era
+implementar o que foi decidido.
 
-**Resultado:** iterações 3 a 7 feitas em sequência na mesma sessão.
+**Resultado:** iterações 3 a 7 feitas em sequência, cada uma com seu teste.
 
 ---
 
@@ -84,7 +110,7 @@ fim é `(inicio + quantidade) % CAPACIDADE_FILA`). Funções: `iniciarFila`, `fi
 justificativa do FIFO no domínio é que a ordem de chegada decide quem fica sem saldo quando
 dois pedidos disputam o mesmo dinheiro.
 
-**Resultado:** `testes/teste_fila.c`, com 10 verificações: vazia, ordem 1-2-3, cheia, volta
+**Resultado:** `testes/teste_fila.c`, com 10 verificações: vazia, ordem 1, 2, 3, cheia, volta
 completa no vetor com a ordem mantida. Todas OK.
 
 ---
@@ -186,3 +212,77 @@ OK**, compilando sem avisos com `gcc -Wall -Wextra -std=c99`.
   demo, testes, uso de IA e resumo. Navegação por setas; no celular os slides viram rolagem.
 
 **Resultado:** slides conferidos em Chrome headless a 1440×900.
+
+---
+
+## Iteração 9 · 2026-11-10 · Simulador animado e slides novos
+
+**Pedido:** os slides eram estáticos demais. A equipe queria ver o processo acontecendo
+(a ficha andando pela fila, pela pilha, pela agenda e pela lista) e um visual mais caprichado.
+Usar o Codex para revisar e deixar o código mais limpo.
+
+**Solução proposta:**
+- `slides/js/banco.js`: motor em JavaScript que espelha `src/sistema.c` (mesmas contas,
+  validações e mensagens). Cada comando devolve uma lista de **passos**, cada um com uma foto
+  do estado, a função C em execução, a linha acesa e uma explicação para iniciantes.
+- `slides/simulador.html` + `slides/js/simulador.js`: tela que toca os passos. A ficha passa
+  pela fila, pela variável `op` e pela pilha; a agenda se reordena com o `qsort`; os nós do
+  histórico são ligados até `NULL`. Ao lado: o trecho de C com a linha acesa e o terminal com
+  a saída do `banco.exe`. Velocidade, modo passo a passo, roteiro da demonstração e roteiro de
+  estorno impossível.
+- Slides: mini animação em cada estrutura (fila, pilha, agenda, lista), fluxo animado na visão
+  geral, entrada em cascata, visão geral pela tecla `O` e link para o simulador.
+- `testes/teste_simulador.mjs`: roda o roteiro de `demo/entrada-demo.txt` no motor e compara
+  linha a linha com `demo/saida-demo.txt`.
+
+**Alteração:** só arquivos do site e um teste novo. O código C não mudou.
+
+**Motivo:** o motor separado da tela permite testar as regras no Node, sem navegador, e
+garante que o que o simulador mostra é o que o programa em C faz.
+
+**Revisões do Codex:** duas rodadas, 18 apontamentos, todos conferidos no código e corrigidos.
+Os principais:
+1. Uma legenda dizia que o estorno "volta a um estado que já existiu", o que é falso quando um
+   agendado executou no meio. Reescrita nos slides, no simulador e no README.
+2. Linhas do painel de código que resumiam o C em vez de mostrar o código real (validação das
+   contas, pilha cheia, arredondamento na agenda) foram trocadas pelas linhas reais.
+3. **Bug real no simulador:** no roteiro, o primeiro comando era exibido e substituído no mesmo
+   instante. Agora o roteiro inteiro entra na fila antes de começar a tocar.
+4. Entrada igual ao C: conta `1.9` recusada (como `lerInteiro`), ano fora de 1900 a 2999
+   recusado (como `dataExiste`), valor `1e2` aceito (como `%lf`).
+5. Acessibilidade: mensagens de erro ligadas aos campos, visão geral fora do Tab quando
+   fechada, espaço não atropela botões focados, botão de pausar nas animações e animação que
+   roda uma vez só com "movimento reduzido".
+
+**Resultado:** `node testes/teste_simulador.mjs`: 25 verificações, todas OK; as 19 linhas da
+demonstração são idênticas às do `banco.exe`. Páginas conferidas no Chrome (desktop e 390 px
+de largura, sem rolagem horizontal e sem erros no console).
+
+---
+
+## Iteração 10 · 2026-11-10 · Vídeo da demonstração
+
+**Pedido:** um vídeo animado mostrando como o sistema funciona, para a apresentação.
+
+**Solução proposta:**
+- **Modo filme** do próprio simulador (`slides/simulador.html?filme`, com `slides/js/filme.js` e
+  `slides/css/filme.css`): palco de 1920×1080, legenda grande e um cartão de título por
+  capítulo (fila, pilha, agenda, pilha de novo, histórico). Os comandos são os mesmos de
+  `demo/entrada-demo.txt`, executados pelo motor já testado.
+- **Gravador** `ferramentas/gravar-video.mjs`: abre o filme no Chrome sem janela, troca o
+  relógio da página por um relógio falso, avança 1/60 s por vez e manda um print de cada quadro
+  para o `ffmpeg`.
+
+**Motivo:** reaproveitar o simulador garante que o vídeo mostra o comportamento real do
+programa, e não uma animação desenhada à parte. Gravar quadro a quadro (em vez de filmar a
+tela) deixa o vídeo liso e permite regravar com um comando se o roteiro mudar.
+
+**Alteração:** `simulador.js` ganhou uma API pequena (`window.Simulador`) usada só pelo filme.
+O código C e o motor `banco.js` não mudaram.
+
+**Resultado da conferência final (Codex):** vídeo completo em
+`slides/midia/banco-ep.mp4`, com 144,85 segundos, 1920×1080 e 60 quadros por segundo.
+Metadados conferidos com FFprobe e quadro final extraído com FFmpeg: o filme chega
+ao cartão de resumo. Os quatro executáveis de teste em C passaram sem falhas;
+as 25 verificações do simulador também passaram, incluindo as 19 linhas da demonstração.
+O link “Ver o vídeo” está nos slides. Revisão local aprovada pelo usuário para commit.

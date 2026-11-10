@@ -1,0 +1,107 @@
+/* filme.css: modo filme do simulador (simulador.html?filme).
+ * Palco fixo de 1920x1080; js/filme.js escala para caber na janela. */
+html.filme { overflow: hidden; background: #000000; }
+html.filme body {
+  position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; min-height: 0;
+  overflow: hidden; transform-origin: 0 0; background: var(--bg);
+}
+html.filme .topo, html.filme .comandos, html.filme .pular,
+html.filme .progresso, html.filme .controle-passo, html.filme #limparTerminal { display: none; }
+
+html.filme .sim {
+  width: 1920px; height: 1080px; max-width: none; margin: 0; padding: 24px; gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 640px;
+  grid-template-rows: 56px minmax(0, 1fr) 280px 112px;
+  grid-template-areas: "ftopo ftopo" "palco codigo" "palco terminal" "legenda legenda";
+  align-items: stretch;
+}
+
+/* Faixa de cima: nome, capítulos e data */
+.f-topo { grid-area: ftopo; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 0 8px; }
+.f-marca { display: flex; align-items: center; gap: 12px; font-size: 18px; line-height: 28px; font-weight: 600; }
+.f-marca small { font-size: 14px; line-height: 20px; font-weight: 400; color: var(--muted); }
+.f-icone { display: grid; gap: 2px; width: 24px; }
+.f-icone span { height: 4px; border-radius: 2px; }
+.f-icone span:nth-child(1) { background: var(--fifo); }
+.f-icone span:nth-child(2) { background: var(--lifo); width: 80%; }
+.f-icone span:nth-child(3) { background: var(--agenda); width: 60%; }
+.f-icone span:nth-child(4) { background: var(--lista); width: 40%; }
+.f-caps { list-style: none; display: flex; gap: 8px; }
+.f-caps li {
+  display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 12px;
+  font-size: 14px; line-height: 20px; font-weight: 500; color: var(--muted);
+  background: var(--surface); border: 1px solid var(--line);
+  transition: color 500ms var(--curva), border-color 500ms var(--curva), background-color 500ms var(--curva);
+}
+.f-caps li::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--cor); opacity: .4; transition: opacity 500ms var(--curva); }
+.f-caps li.atual { color: var(--text); border-color: var(--cor); background: var(--surface-2); }
+.f-caps li.atual::before { opacity: 1; }
+html.filme .chip { font-size: 16px; line-height: 24px; padding: 8px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+
+/* Palco e painéis */
+html.filme .palco { grid-area: palco; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 16px; }
+html.filme .contas { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+html.filme .conta { padding: 12px 16px; }
+html.filme .conta .avatar { display: grid; }
+html.filme .conta .quem { font-size: 14px; line-height: 20px; }
+html.filme .conta .saldo { font-size: 24px; line-height: 32px; margin-top: 4px; }
+html.filme .trilho .ponta { display: grid; }
+html.filme .meio { grid-template-columns: minmax(0, .8fr) minmax(0, 1fr) minmax(0, 1.3fr); }
+html.filme .meio .painel { display: flex; flex-direction: column; }
+html.filme .op-area, html.filme .pilha-area, html.filme .agenda-area { flex: 1; min-height: 0; }
+html.filme #agenda { gap: 12px; }
+html.filme #agenda .ficha { grid-template-columns: auto 1fr auto; align-items: center; column-gap: 16px; }
+html.filme #agenda .ficha .rota { display: none; }
+html.filme #agenda .ficha .quando { grid-row: auto; grid-column: auto; }
+html.filme .hist-area { min-height: 160px; align-content: flex-start; }
+html.filme .no::before, html.filme .nulo::before { width: 16px; }
+
+html.filme .explica { display: contents; }
+html.filme .explica > .painel:nth-child(2) { grid-area: codigo; }
+html.filme .explica > .painel:nth-child(3) { grid-area: terminal; }
+html.filme .explica > .painel { display: flex; flex-direction: column; min-height: 0; }
+html.filme .codigo-caixa { flex: 1; max-height: none; overflow: hidden; font-size: 11px; }
+html.filme .terminal { flex: 1; height: auto; min-height: 0; overflow: hidden; }
+
+/* Legenda grande embaixo */
+html.filme .narracao {
+  grid-area: legenda; min-height: 0; padding: 16px 24px;
+  display: flex; flex-direction: column; justify-content: center;
+  transition: border-color 500ms var(--curva);
+}
+html.filme .narracao .cmd { font-size: 14px; line-height: 20px; }
+html.filme .narracao .texto { font-size: 24px; line-height: 32px; margin-top: 4px; }
+
+/* Destaque do histórico: o resto apaga */
+html.filme .contas, html.filme .palco > .painel, html.filme .meio, html.filme .explica > .painel { transition: opacity 500ms var(--curva), border-color 500ms var(--curva); }
+html.filme.foco-hist .contas, html.filme.foco-hist .palco > .painel:not(:last-child),
+html.filme.foco-hist .meio, html.filme.foco-hist .explica > .painel:not(.narracao) { opacity: .2; }
+html.filme.foco-hist .palco > .painel:last-child { border-color: var(--lista); }
+html.filme .no .caixa { transition: border-color 300ms var(--curva), background-color 300ms var(--curva); }
+html.filme .no.f-aceso .caixa { border-color: var(--text); background: #3A3A3A; }
+
+/* Cartões de abertura, capítulo e encerramento */
+.f-cartao {
+  position: absolute; inset: 0; z-index: 40; background: var(--bg);
+  display: flex; flex-direction: column; justify-content: center; padding: 0 160px;
+  opacity: 0; visibility: hidden;
+  transition: opacity 500ms var(--curva), visibility 0s linear 500ms;
+}
+.f-cartao.visivel { opacity: 1; visibility: visible; transition: opacity 500ms var(--curva); }
+.f-cartao > * {
+  opacity: 0; transform: translateY(32px);
+  transition: opacity 700ms var(--curva), transform 700ms var(--curva);
+  transition-delay: calc(var(--i, 0) * 90ms);
+}
+.f-cartao.dentro > * { opacity: 1; transform: none; }
+.f-cartao .f-icone { width: 120px; gap: 8px; margin-bottom: 48px; }
+.f-cartao .f-icone span { height: 16px; border-radius: 4px; }
+.f-cartao .f-num { font: 500 24px/32px "Geist Mono", monospace; color: var(--muted); margin-bottom: 24px; display: flex; align-items: center; gap: 16px; }
+.f-cartao .f-num::before { content: ""; width: 16px; height: 16px; border-radius: 4px; background: var(--cor, var(--text)); }
+.f-cartao .rotulo { font-size: 20px; line-height: 28px; margin-bottom: 24px; color: var(--cor, var(--muted)); }
+.f-cartao h1 { font-size: 72px; line-height: 1; max-width: 1280px; padding-bottom: 8px; }
+.f-cartao .f-sub { font-size: 30px; line-height: 36px; color: var(--muted); margin-top: 32px; max-width: 1200px; }
+.f-cartao .f-fatos { display: flex; gap: 16px; margin-top: 48px; }
+.f-cartao .f-fatos span { padding: 12px 24px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 20px; line-height: 28px; }
+.f-cartao .f-fatos b { font-family: "Geist Mono", monospace; font-weight: 500; color: var(--lista); margin-right: 8px; }
+.f-cartao [hidden] { display: none; }

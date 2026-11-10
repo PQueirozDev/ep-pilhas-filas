@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador do Banco EP</title>
+<meta name="description" content="Veja fila, pilha, agenda com qsort e lista encadeada funcionando passo a passo, com o código C de cada etapa e a mesma saída do banco.exe.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23181818'/%3E%3Crect x='8' y='8' width='16' height='4' rx='1' fill='%23F5B971'/%3E%3Crect x='8' y='14' width='16' height='4' rx='1' fill='%23F5B971' opacity='.6'/%3E%3Crect x='8' y='20' width='16' height='4' rx='1' fill='%23F5B971' opacity='.3'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/filme.css">
+<script>if (new URLSearchParams(location.search).has('filme')) document.documentElement.classList.add('filme');</script>
+<style>
+  body { min-height: 100vh; }
+
+  /* Barra superior flutuante */
+  .topo {
+    position: sticky; top: 16px; z-index: 20;
+    width: fit-content; max-width: calc(100% - 32px); margin: 16px auto 0;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
+    padding: 8px; border-radius: 16px;
+    background: rgba(31, 31, 31, .72); border: 1px solid var(--line);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  }
+  .topo .titulo { font-weight: 600; font-size: 14px; line-height: 20px; padding: 0 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 8px;
+    background: var(--surface-2); font-size: 14px; line-height: 20px;
+  }
+  .chip b { font-family: "Geist Mono", monospace; font-weight: 500; }
+  .chip.pulsa { animation: pulsa 900ms var(--curva); }
+  @keyframes pulsa { 0% { transform: scale(1); } 30% { transform: scale(1.08); background: var(--agenda-a); } 100% { transform: scale(1); } }
+  .segmentado { display: inline-flex; padding: 2px; border-radius: 10px; background: var(--surface-2); }
+  .segmentado button {
+    border: 0; background: transparent; color: var(--muted); cursor: pointer;
+    font: 500 14px/20px "Geist", sans-serif; padding: 4px 12px; border-radius: 8px;
+    transition: background-color 300ms var(--curva), color 300ms var(--curva);
+  }
+  .segmentado button[aria-pressed="true"] { background: #3A3A3A; color: var(--text); }
+  .interruptor { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; cursor: pointer; color: var(--muted); }
+  .interruptor input { appearance: none; width: 32px; height: 20px; border-radius: 10px; background: var(--line); position: relative; cursor: pointer; transition: background-color 300ms var(--curva); }
+  .interruptor input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 8px; background: var(--text); transition: transform 300ms var(--curva); }
+  .interruptor input:checked { background: var(--lifo); }
+  .interruptor input:checked::after { transform: translateX(12px); }
+
+  /* Layout principal */
+  .sim {
+    display: grid; gap: 24px; padding: 24px;
+    grid-template-columns: 320px minmax(0, 1fr) 380px;
+    grid-template-areas: "comandos palco explica";
+    max-width: 1680px; margin: 0 auto; align-items: start;
+  }
+  .comandos { grid-area: comandos; }
+  .palco { grid-area: palco; display: grid; gap: 16px; }
+  .explica { grid-area: explica; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; position: sticky; top: 88px; min-width: 0; }
+  .comandos, .palco { min-width: 0; }
+
+  .painel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  .painel > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  .painel h2 { font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: 0; display: flex; align-items: center; gap: 8px; }
+  .painel h2 .marca { width: 8px; height: 8px; border-radius: 2px; }
+  .meta { font-family: "Geist Mono", monospace; font-size: 12px; line-height: 16px; color: var(--muted); }
+
+  /* Comandos */
+  .comandos { display: grid; gap: 16px; }
+  .grupo { display: grid; gap: 12px; }
+  .grupo + .grupo { padding-top: 16px; border-top: 1px solid var(--line); }
+  .campos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .campo { display: grid; gap: 4px; }
+  .campo.cheio { grid-column: 1 / -1; }
+  .campo label { font-size: 12px; line-height: 16px; color: var(--muted); }
+  .campo input {
+    width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--text); font: 400 14px/20px "Geist Mono", monospace;
+    transition: border-color 300ms var(--curva);
+  }
+  .campo input:hover { border-color: #444; }
+  .campo input[aria-invalid="true"] { border-color: var(--erro); }
+  .campo .dica-erro { font-size: 12px; line-height: 16px; color: var(--erro); }
+  .campo .dica-erro:empty { display: none; }
+  .campo[hidden] { display: none; }
+  .tipos { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 12px; background: var(--bg); }
+  .tipos button {
+    border: 0; padding: 4px 8px; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer;
+    font: 500 14px/20px "Geist", sans-serif; transition: background-color 300ms var(--curva), color 300ms var(--curva);
+  }
+  .tipos button:hover { color: var(--text); }
+  .tipos button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
+  .acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .acoes .botao { font-size: 14px; line-height: 20px; }
+  .acoes .cheio { grid-column: 1 / -1; }
+  .botao.fifo { border-color: rgba(124,196,250,.4); }
+  .botao.lifo { border-color: rgba(245,185,113,.4); }
+  .botao.agenda { border-color: rgba(195,166,247,.4); }
+
+  /* Contas */
+  .contas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .conta {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px;
+    transition: border-color 300ms var(--curva), background-color 300ms var(--curva), transform var(--dur) var(--curva);
+  }
+  .conta .quem { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; color: var(--muted); }
+  .conta .avatar { width: 24px; height: 24px; border-radius: 12px; display: grid; place-items: center; background: var(--surface-2); color: var(--text); font-size: 12px; font-weight: 600; }
+  .conta .saldo { font: 500 24px/32px "Geist Mono", monospace; margin-top: 8px; letter-spacing: -0.02em; }
+  .conta .delta { font: 500 12px/16px "Geist Mono", monospace; height: 16px; opacity: 0; transition: opacity 300ms var(--curva); }
+  .conta.sobe .delta, .conta.desce .delta { opacity: 1; }
+  .conta.sobe { border-color: var(--lista); } .conta.sobe .delta { color: var(--lista); }
+  .conta.desce { border-color: var(--lifo); } .conta.desce .delta { color: var(--lifo); }
+  .conta.foco-ok { border-color: var(--lista); background: var(--lista-a); }
+  .conta.foco-erro { border-color: var(--erro); background: var(--erro-a); animation: tremer 500ms var(--curva); }
+  .conta.foco-info { border-color: var(--muted); }
+
+  /* Fichas (uma Operacao) */
+  .ficha {
+    position: relative; flex: none;
+    display: grid; gap: 2px; min-width: 148px; padding: 8px 12px; border-radius: 10px;
+    background: var(--surface-2); border: 1px solid var(--line);
+    font-size: 12px; line-height: 16px; will-change: transform;
+  }
+  .ficha .l1 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .ficha .num { font: 600 14px/20px "Geist Mono", monospace; }
+  .ficha .tipo { color: var(--muted); }
+  .ficha .valor { font: 500 14px/20px "Geist Mono", monospace; }
+  .ficha .rota { color: var(--muted); font-family: "Geist Mono", monospace; }
+  .ficha .tag {
+    position: absolute; top: -10px; left: 8px; padding: 0 4px; border-radius: 4px;
+    font: 500 12px/16px "Geist Mono", monospace; background: var(--bg); color: var(--muted);
+  }
+  .ficha.foco-ok, .no.foco-ok { box-shadow: 0 0 0 2px var(--lista), 0 8px 24px rgba(139,211,160,.18); }
+  .ficha.foco-erro, .no.foco-erro { box-shadow: 0 0 0 2px var(--erro), 0 8px 24px rgba(242,135,139,.18); animation: tremer 500ms var(--curva); }
+  .ficha.foco-info, .no.foco-info { box-shadow: 0 0 0 2px var(--text), 0 8px 24px rgba(255,255,255,.08); }
+  @keyframes tremer { 0%,100% { transform: none; } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+
+  #fila .ficha { border-color: rgba(124,196,250,.5); }
+  #pilha .ficha { border-color: rgba(245,185,113,.5); }
+  #agenda .ficha { border-color: rgba(195,166,247,.5); }
+  #op .ficha { border-color: var(--text); }
+
+  .vazio { color: var(--muted); font-size: 14px; line-height: 20px; padding: 12px 0; }
+  .lista-viva:not(:empty) + .vazio { display: none; }
+
+  /* Fila */
+  .trilho { display: flex; align-items: center; gap: 12px; }
+  .trilho .ponta { flex: none; font-size: 12px; line-height: 16px; color: var(--muted); display: grid; justify-items: center; gap: 2px; width: 48px; text-align: center; }
+  .trilho .ponta i { font-size: 20px; color: var(--fifo); }
+  .fila-area { flex: 1; min-width: 0; overflow-x: auto; padding: 16px 4px 8px; border-radius: 12px; background: var(--bg); min-height: 96px; display: flex; align-items: center; }
+  #fila { display: flex; gap: 12px; padding: 0 8px; }
+  #fila + .vazio { padding: 0 12px; }
+
+  /* Linha do meio */
+  .meio { display: grid; grid-template-columns: minmax(180px, .8fr) minmax(200px, 1fr) minmax(240px, 1.3fr); gap: 16px; align-items: stretch; }
+  .op-area { min-height: 120px; display: grid; place-items: center; border-radius: 12px; background: var(--bg); border: 1px dashed var(--line); padding: 16px 8px; }
+  #op .ficha { min-width: 160px; }
+  .pilha-area { min-height: 240px; display: flex; flex-direction: column; justify-content: flex-end; border-radius: 12px; background: var(--bg); padding: 12px; border: 1px solid var(--line); border-top: 1px solid var(--line); }
+  #pilha { display: flex; flex-direction: column-reverse; gap: 8px; }
+  #pilha .ficha { width: 100%; }
+  #pilha .ficha:last-child .tag { color: var(--lifo); }
+  .agenda-area { min-height: 240px; border-radius: 12px; background: var(--bg); padding: 16px 12px 12px; }
+  #agenda { display: grid; gap: 16px; }
+  #agenda .ficha { width: 100%; grid-template-columns: 1fr auto; column-gap: 12px; }
+  #agenda .ficha .quando { grid-row: 1 / span 2; grid-column: 2; align-self: center; font: 500 14px/20px "Geist Mono", monospace; color: var(--agenda); }
+
+  /* Histórico (lista encadeada) */
+  .hist-area { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 0; padding: 12px; border-radius: 12px; background: var(--bg); }
+  #historico { display: contents; }
+  .ponteiro { font: 500 12px/16px "Geist Mono", monospace; color: var(--muted); padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px; }
+  .no {
+    display: flex; align-items: center; flex: none;
+  }
+  .no::before { content: ""; width: 24px; height: 1px; background: var(--muted); margin: 0 4px; }
+  .no .caixa {
+    display: grid; gap: 0; padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(139,211,160,.4);
+    background: var(--surface-2); font-size: 12px; line-height: 16px;
+  }
+  .no .sit { font-weight: 600; }
+  .no .det { font-family: "Geist Mono", monospace; color: var(--muted); }
+  .no.s-erro .caixa { border-color: rgba(242,135,139,.5); } .no.s-erro .sit { color: var(--erro); }
+  .no.s-estorno .sit { color: var(--lifo); }
+  .no.s-agenda .sit { color: var(--agenda); }
+  .no.s-ok .sit { color: var(--lista); }
+  .nulo { display: flex; align-items: center; font: 500 12px/16px "Geist Mono", monospace; color: var(--muted); }
+  .nulo::before { content: ""; width: 24px; height: 1px; background: var(--muted); margin: 0 4px; }
+
+  /* Explicação */
+  .narracao { min-height: 200px; }
+  .narracao .cmd { font-size: 14px; line-height: 20px; color: var(--muted); }
+  .narracao .texto { font-size: 18px; line-height: 28px; margin-top: 8px; transition: opacity 300ms var(--curva); }
+  .narracao.tom-erro { border-color: rgba(242,135,139,.5); }
+  .narracao.tom-ok { border-color: rgba(139,211,160,.4); }
+  .progresso { display: flex; gap: 4px; margin-top: 16px; flex-wrap: wrap; }
+  .progresso span { width: 16px; height: 4px; border-radius: 2px; background: var(--line); transition: background-color 300ms var(--curva); }
+  .progresso span.feito { background: var(--muted); }
+  .progresso span.atual { background: var(--text); }
+  .controle-passo { display: flex; gap: 8px; margin-top: 16px; }
+  .codigo-caixa { max-height: 336px; overflow: auto; border-radius: 12px; background: var(--bg); padding: 8px 0; position: relative; }
+  .codigo-caixa .ln { display: grid; grid-template-columns: 32px 1fr; padding: 0 12px 0 0; white-space: pre; transition: background-color 300ms var(--curva); }
+  .codigo-caixa .ln::before { content: attr(data-n); text-align: right; padding-right: 12px; color: #555; }
+  .codigo-caixa .ln.ativa { background: rgba(255,255,255,.08); box-shadow: inset 2px 0 0 var(--text); }
+  .codigo-caixa .ln.ativa.ok { background: var(--lista-a); box-shadow: inset 2px 0 0 var(--lista); }
+  .codigo-caixa .ln.ativa.erro { background: var(--erro-a); box-shadow: inset 2px 0 0 var(--erro); }
+  .terminal { height: 220px; overflow: auto; border-radius: 12px; background: #000000; padding: 12px; font: 400 12px/20px "Geist Mono", monospace; color: #CFCFCF; white-space: pre; }
+  .terminal .cmd { color: #6F6F6F; }
+  .terminal .ok { color: var(--lista); }
+  .terminal .erro { color: var(--erro); }
+  .terminal .p { color: var(--lifo); }
+  .terminal .a { color: var(--agenda); }
+  .terminal .ent { animation: entraLinha 500ms var(--curva); }
+  @keyframes entraLinha { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .saida-clone { position: fixed; z-index: 30; pointer-events: none; margin: 0; }
+
+  @media (max-width: 1359px) {
+    .sim { grid-template-columns: 300px minmax(0, 1fr); grid-template-areas: "comandos palco" "explica explica"; }
+    .explica { position: static; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .explica .narracao { grid-column: 1 / -1; }
+  }
+  @media (max-width: 999px) {
+    .sim { grid-template-columns: minmax(0, 1fr); grid-template-areas: "palco" "explica" "comandos"; padding: 16px; }
+    .explica { grid-template-columns: minmax(0, 1fr); }
+    .meio { grid-template-columns: 1fr; }
+    .pilha-area, .agenda-area { min-height: 0; }
+    .contas { gap: 8px; }
+    .conta { padding: 12px; }
+    .conta .saldo { font-size: 18px; line-height: 28px; }
+    .topo .titulo { display: none; }
+  }
+  @media (max-width: 520px) {
+    .conta { padding: 8px; }
+    .conta .avatar { display: none; }
+    .conta .quem { font-size: 12px; line-height: 16px; }
+    .conta .saldo { font-size: 14px; line-height: 20px; margin-top: 4px; }
+    .trilho .ponta { display: none; }
+  }
+</style>
+</head>
+<body>
+<a class="pular" href="#palco">Pular para o simulador</a>
+
+<header class="topo" aria-label="Controles do simulador">
+  <a class="botao pequeno" href="index.html"><i class="ph ph-arrow-left" aria-hidden="true"></i>Slides</a>
+  <span class="titulo">Simulador do Banco EP</span>
+  <span class="chip" id="chipData">hoje <b id="hoje">05/11/2026</b></span>
+  <div class="segmentado" role="group" aria-label="Velocidade">
+    <button type="button" data-vel="0.5" aria-pressed="false">0,5×</button>
+    <button type="button" data-vel="1" aria-pressed="true">1×</button>
+    <button type="button" data-vel="2" aria-pressed="false">2×</button>
+  </div>
+  <label class="interruptor"><input type="checkbox" id="modoPasso"> Passo a passo</label>
+</header>
+
+<main class="sim">
+  <!-- Comandos -->
+  <aside class="comandos painel" aria-label="Comandos do banco">
+    <div class="grupo">
+      <p class="rotulo">Roteiros prontos</p>
+      <div class="acoes">
+        <button class="botao primario cheio" id="rodarDemo" type="button"><i class="ph ph-play" aria-hidden="true"></i>Rodar a demonstração</button>
+        <button class="botao" id="rodarEstorno" type="button">Estorno impossível</button>
+        <button class="botao" id="reiniciar" type="button"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i>Reiniciar</button>
+      </div>
+    </div>
+
+    <form class="grupo" id="formPedido" novalidate>
+      <p class="rotulo">Pedido imediato · entra na fila</p>
+      <div class="tipos" role="group" aria-label="Tipo de operação">
+        <button type="button" data-tipo="1" aria-pressed="true">Depósito</button>
+        <button type="button" data-tipo="2" aria-pressed="false">Saque</button>
+        <button type="button" data-tipo="3" aria-pressed="false">Transferência</button>
+        <button type="button" data-tipo="4" aria-pressed="false">Pagamento</button>
+      </div>
+      <div class="campos">
+        <div class="campo" id="campoOrigem" hidden><label for="origem">Conta de origem</label><input id="origem" type="number" inputmode="numeric" min="0" value="1"></div>
+        <div class="campo" id="campoDestino"><label for="destino">Conta de destino</label><input id="destino" type="number" inputmode="numeric" min="0" value="3"></div>
+        <div class="campo"><label for="valor">Valor (R$)</label><input id="valor" type="text" inputmode="decimal" value="100" autocomplete="off"><span class="dica-erro" id="erroValor"></span></div>
+      </div>
+      <button class="botao fifo" type="submit"><i class="ph ph-queue" aria-hidden="true"></i>Colocar na fila</button>
+    </form>
+
+    <div class="grupo">
+      <p class="rotulo">Processamento</p>
+      <div class="acoes">
+        <button class="botao fifo" id="processar" type="button">Processar próximo</button>
+        <button class="botao fifo" id="processarTodos" type="button">Processar todos</button>
+        <button class="botao lifo cheio" id="estornar" type="button"><i class="ph ph-arrow-u-up-left" aria-hidden="true"></i>Estornar o topo da pilha</button>
+      </div>
+    </div>
+
+    <form class="grupo" id="formAgendar" novalidate>
+      <p class="rotulo">Agenda · ordenada com qsort</p>
+      <div class="campos">
+        <div class="campo"><label for="agConta">Conta que paga</label><input id="agConta" type="number" inputmode="numeric" min="0" value="1"></div>
+        <div class="campo"><label for="agValor">Valor (R$)</label><input id="agValor" type="text" inputmode="decimal" value="50" autocomplete="off"><span class="dica-erro" id="erroAgValor"></span></div>
+        <div class="campo cheio"><label for="agData">Data do pagamento</label><input id="agData" type="date" value="2026-11-10"><span class="dica-erro" id="erroAgData"></span></div>
+      </div>
+      <button class="botao agenda" type="submit"><i class="ph ph-calendar-plus" aria-hidden="true"></i>Agendar pagamento</button>
+    </form>
+
+    <form class="grupo" id="formCancelar" novalidate>
+      <div class="campos">
+        <div class="campo"><label for="cancNum">Nº do agendado</label><input id="cancNum" type="number" inputmode="numeric" min="1" value="1"></div>
+        <div class="campo" style="align-self:end"><button class="botao agenda" type="submit" style="width:100%">Cancelar</button></div>
+      </div>
+    </form>
+
+    <form class="grupo" id="formAvancar" novalidate>
+      <div class="campos">
+        <div class="campo"><label for="novaData">Nova data</label><input id="novaData" type="date" value="2026-11-10"></div>
+        <div class="campo" style="align-self:end"><button class="botao agenda" type="submit" style="width:100%">Avançar</button></div>
+      </div>
+    </form>
+  </aside>
+
+  <!-- Palco: as estruturas -->
+  <section class="palco" id="palco" aria-label="Estruturas de dados" tabindex="-1">
+    <div class="contas" id="contas"></div>
+
+    <div class="painel">
+      <header>
+        <h2><span class="marca" style="background:var(--fifo)"></span>Fila de pedidos · FIFO</h2>
+        <span class="meta" id="filaMeta">inicio = 0 · quantidade = 0</span>
+      </header>
+      <div class="trilho">
+        <span class="ponta"><i class="ph ph-arrow-left" aria-hidden="true"></i>sai pelo início</span>
+        <div class="fila-area">
+          <div id="fila" class="lista-viva"></div>
+          <p class="vazio">Fila vazia. Faça um pedido imediato ao lado.</p>
+        </div>
+        <span class="ponta"><i class="ph ph-arrow-left" aria-hidden="true"></i>entra pelo fim</span>
+      </div>
+    </div>
+
+    <div class="meio">
+      <div class="painel">
+        <header><h2><span class="marca" style="background:var(--text)"></span>Variável <code>op</code></h2><span class="meta">em mãos</span></header>
+        <div class="op-area">
+          <div id="op" class="lista-viva"></div>
+          <p class="vazio">Nenhuma ficha em mãos.</p>
+        </div>
+      </div>
+      <div class="painel">
+        <header><h2><span class="marca" style="background:var(--lifo)"></span>Pilha · LIFO</h2><span class="meta" id="pilhaMeta">quantidade = 0</span></header>
+        <div class="pilha-area">
+          <div id="pilha" class="lista-viva"></div>
+          <p class="vazio">Pilha vazia: "Nada a estornar."</p>
+        </div>
+      </div>
+      <div class="painel">
+        <header><h2><span class="marca" style="background:var(--agenda)"></span>Agenda · qsort</h2><span class="meta" id="agendaMeta">quantidade = 0</span></header>
+        <div class="agenda-area">
+          <div id="agenda" class="lista-viva"></div>
+          <p class="vazio">Nenhum pagamento agendado.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="painel">
+      <header><h2><span class="marca" style="background:var(--lista)"></span>Histórico · lista encadeada</h2><span class="meta" id="histMeta">quantidade = 0</span></header>
+      <div class="hist-area">
+        <span class="ponteiro">h-&gt;inicio</span>
+        <div id="historico"></div>
+        <span class="nulo">NULL</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Explicação: narração, código e terminal -->
+  <aside class="explica" aria-label="O que está acontecendo">
+    <div class="painel narracao" id="narracao" aria-live="polite">
+      <p class="cmd" id="narCmd">Pronto para começar</p>
+      <p class="texto" id="narTexto">Clique em <b>Rodar a demonstração</b> para ver o roteiro do EP, ou faça seus próprios pedidos. Cada passo mostra a estrutura se mexendo, a linha de C que está rodando e o que o banco.exe imprimiria.</p>
+      <div class="progresso" id="progresso" aria-hidden="true"></div>
+      <div class="controle-passo">
+        <button class="botao pequeno" id="proximoPasso" type="button" disabled><i class="ph ph-skip-forward" aria-hidden="true"></i>Próximo passo</button>
+        <button class="botao pequeno" id="pularTudo" type="button" disabled>Ir para o fim</button>
+      </div>
+    </div>
+    <div class="painel">
+      <header><h2><i class="ph ph-code" aria-hidden="true"></i><span id="codTitulo">Código C</span></h2><span class="meta" id="codArquivo">src/</span></header>
+      <div class="codigo-caixa codigo" id="codigo"><div class="ln" data-n="1"><span class="tk-c">/* o trecho de C de cada passo aparece aqui */</span></div></div>
+    </div>
+    <div class="painel">
+      <header><h2><i class="ph ph-terminal-window" aria-hidden="true"></i>Saída do banco.exe</h2><button class="botao pequeno" id="limparTerminal" type="button">Limpar</button></header>
+      <div class="terminal" id="terminal" role="log" aria-label="Saída do terminal"></div>
+    </div>
+  </aside>
+</main>
+
+<script src="js/banco.js"></script>
+<script src="js/simulador.js"></script>
+<script src="js/filme.js"></script>
+</body>
+</html>

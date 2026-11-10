@@ -6,7 +6,7 @@ pagamento** (imediato ou agendado) e podem **estornar** a última operação efe
 | Estrutura | Onde | Por quê |
 |---|---|---|
 | **Fila (FIFO)** | pedidos imediatos (`src/fila.c`) | quem pediu primeiro é atendido primeiro. A ordem decide quem fica sem saldo quando dois pedidos disputam o mesmo dinheiro |
-| **Pilha (LIFO)** | operações efetivadas (`src/pilha.c`) | o estorno desfaz a **última** efetivada. Desfazer na ordem inversa sempre volta a um estado que já existiu |
+| **Pilha (LIFO)** | operações efetivadas (`src/pilha.c`) | o estorno desfaz a **última** efetivada. Desfazer sempre a mais recente evita desmontar uma operação de que outras ainda dependem; se o dinheiro já foi usado, o estorno é recusado |
 | **Vetor + `qsort`** | pagamentos agendados (`src/agendados.c`) | ordenados por data. Como o `qsort` não é estável, o **número de entrada** desempata datas iguais (mantém FIFO) |
 | **Lista encadeada** | histórico (`src/historico.c`) | cresce sem limite fixo; cada registro é criado com `malloc` e liberado com `free` |
 
@@ -54,6 +54,30 @@ banco.exe < demo\entrada-demo.txt
 ```
 A saída esperada está em `demo/saida-demo.txt`.
 
+## Simulador animado (site)
+
+`slides/simulador.html` mostra as estruturas funcionando passo a passo: a ficha entra na fila,
+sai pelo início, vira a variável `op`, vai para o topo da pilha, a agenda se reordena com o
+`qsort` e cada nó é ligado no fim da lista. Ao lado aparecem a linha de C que está rodando e a
+mesma saída que o `banco.exe` imprimiria.
+
+- **Rodar a demonstração**: o mesmo roteiro de `demo/entrada-demo.txt`, animado.
+- **Estorno impossível**: um agendado gasta o depósito e o estorno é recusado.
+- Pedidos livres pelos formulários (inclusive os casos extremos), velocidade 0,5× a 2× e
+  **modo passo a passo**.
+
+O motor do simulador (`slides/js/banco.js`) é um espelho em JavaScript de `src/sistema.c`.
+`node testes/teste_simulador.mjs` confere que ele imprime exatamente as mesmas linhas do
+`banco.exe` no roteiro da demonstração e testa os casos extremos (25 verificações).
+
+**Vídeo:** `slides/midia/banco-ep.mp4` mostra a demonstração inteira em capítulos (fila, pilha,
+agenda, histórico). Ele é o próprio simulador em "modo filme" (`slides/simulador.html?filme`,
+que também roda ao vivo no navegador), gravado quadro a quadro. Para regravar, com `ffmpeg` e
+Chrome instalados: `cd ferramentas`, `npm install`, `node gravar-video.mjs`.
+
+Para abrir localmente: `python -m http.server -d slides` e acesse `http://localhost:8000`.
+Nos slides: setas para navegar, `O` para a visão geral, `S` para o simulador.
+
 ## Casos extremos tratados
 
 | Caso | Comportamento | Teste |
@@ -83,4 +107,7 @@ A saída esperada está em `demo/saida-demo.txt`.
 | `testes/` | 4 programas de teste (62 verificações) |
 | `demo/` | roteiro da demonstração e saída esperada |
 | `processo-ia.md` | diário das iterações com a IA |
-| `slides/index.html` | slides da apresentação |
+| `slides/index.html` | slides da apresentação, com mini animações de cada estrutura |
+| `slides/simulador.html` | simulador animado (`js/banco.js` = motor, `js/simulador.js` = tela) |
+| `slides/midia/banco-ep.mp4` | vídeo da demonstração (`js/filme.js` = roteiro, `ferramentas/gravar-video.mjs` = gravador) |
+| `testes/teste_simulador.mjs` | confere o motor JS contra a saída real do `banco.exe` |
