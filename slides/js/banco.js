@@ -22,7 +22,7 @@
   const SEM_CONTA = 0;
   const SIT_EFETIVADA = 1, SIT_RECUSADA = 2, SIT_ESTORNADA = 3, SIT_AGENDADA = 4,
         SIT_CANCELADA = 5, SIT_AGENDADO_PAGO = 6, SIT_AGENDADO_RECUSADO = 7;
-  const CAPACIDADE_FILA = 50, CAPACIDADE_PILHA = 100, CAPACIDADE_AGENDA = 50;
+  const CAPACIDADE_FILA = 50, CAPACIDADE_PILHA = 100, CAPACIDADE_AGENDA = 50, CAPACIDADE_HISTORICO = 1000;
   const MEIO_CENTAVO = 0.005, VALOR_MAXIMO = 1000000.00;
   const DATA_INICIAL = 20261105;
 
@@ -36,230 +36,743 @@
 
   /* ---------------- Código C mostrado no painel ---------------- */
   const CODIGO = {
-    solicitarOperacao: { arquivo: 'sistema.c', linhas: [
-      'int solicitarOperacao(Sistema *s, int tipo, int origem,',
-      '                      int destino, double valor)',
-      '{',
-      '    if (!valorValido(valor))       return RES_VALOR_INVALIDO;',
-      '    valor = arredondarCentavos(valor);',
-      '    precisaOrigem  = (tipo == TIPO_SAQUE || tipo == TIPO_TRANSFERENCIA ||',
-      '                      tipo == TIPO_PAGAMENTO);',
-      '    precisaDestino = (tipo == TIPO_DEPOSITO || tipo == TIPO_TRANSFERENCIA);',
-      '    if ((precisaOrigem && buscarConta(s, origem) == NULL) ||',
-      '        (precisaDestino && buscarConta(s, destino) == NULL))',
-      '        return RES_CONTA_INVALIDA;',
-      '    if (!precisaOrigem)  origem  = SEM_CONTA;   /* ignora conta que não se aplica */',
-      '    if (!precisaDestino) destino = SEM_CONTA;',
-      '    if (tipo == TIPO_TRANSFERENCIA && origem == destino)',
-      '        return RES_MESMA_CONTA;',
-      '    if (filaCheia(&s->pedidos))    return RES_FILA_CHEIA;',
-      '',
-      '    op = criarOperacao(s->proximoNumero, tipo, origem, destino, valor);',
-      '    s->proximoNumero++;',
-      '    enfileirar(&s->pedidos, op);',
-      '    return RES_OK;',
-      '}'] },
-    enfileirar: { arquivo: 'fila.c', linhas: [
-      'int enfileirar(Fila *f, Operacao op)',
-      '{',
-      '    int fim;',
-      '',
-      '    if (filaCheia(f)) {',
-      '        return 0;',
-      '    }',
-      '    fim = (f->inicio + f->quantidade) % CAPACIDADE_FILA;  /* 1ª posição livre */',
-      '    f->itens[fim] = op;',
-      '    f->quantidade++;',
-      '    return 1;',
-      '}'] },
-    processarProximo: { arquivo: 'sistema.c', linhas: [
-      'int processarProximo(Sistema *s)',
-      '{',
-      '    if (filaVazia(&s->pedidos)) {',
-      '        printf("  Nenhum pedido na fila.\\n");',
-      '        return RES_FILA_VAZIA;',
-      '    }',
-      '    if (pilhaCheia(&s->efetivadas)) {     /* sem espaço para o estorno */',
-      '        return RES_PILHA_CHEIA;           /* o pedido espera na fila  */',
-      '    }',
-      '    desenfileirar(&s->pedidos, &op);         /* FIFO: sai o mais antigo */',
-      '    resultado = aplicarOperacao(s, op);',
-      '',
-      '    if (resultado == RES_OK) {',
-      '        empilhar(&s->efetivadas, op);        /* LIFO: vira o novo topo  */',
-      '        registrarHistorico(&s->historico, op, SIT_EFETIVADA, s->hoje);',
-      '    } else {',
-      '        registrarHistorico(&s->historico, op, SIT_RECUSADA, s->hoje);',
-      '    }',
-      '    return resultado;',
-      '}'] },
-    desenfileirar: { arquivo: 'fila.c', linhas: [
-      'int desenfileirar(Fila *f, Operacao *saida)',
-      '{',
-      '    if (filaVazia(f)) {',
-      '        return 0;',
-      '    }',
-      '    *saida = f->itens[f->inicio];                    /* copia o primeiro       */',
-      '    f->inicio = (f->inicio + 1) % CAPACIDADE_FILA;   /* o segundo vira primeiro */',
-      '    f->quantidade--;',
-      '    return 1;',
-      '}'] },
-    aplicarOperacao: { arquivo: 'sistema.c', linhas: [
-      'int aplicarOperacao(Sistema *s, Operacao op)',
-      '{',
-      '    Conta *origem  = buscarConta(s, op.contaOrigem);',
-      '    Conta *destino = buscarConta(s, op.contaDestino);',
-      '',
-      '    if (origem != NULL && origem->saldo + MEIO_CENTAVO < op.valor) {',
-      '        return RES_SALDO_INSUFICIENTE;          /* caso extremo: sem saldo */',
-      '    }',
-      '    if (origem != NULL)  origem->saldo  -= op.valor;',
-      '    if (destino != NULL) destino->saldo += op.valor;',
-      '    return RES_OK;',
-      '}'] },
-    empilhar: { arquivo: 'pilha.c', linhas: [
-      'int empilhar(Pilha *p, Operacao op)',
-      '{',
-      '    if (pilhaCheia(p)) {',
-      '        return 0;',
-      '    }',
-      '    p->itens[p->quantidade] = op;   /* grava na primeira posição livre (novo topo) */',
-      '    p->quantidade++;',
-      '    return 1;',
-      '}'] },
-    desempilhar: { arquivo: 'pilha.c', linhas: [
-      'int desempilhar(Pilha *p, Operacao *saida)',
-      '{',
-      '    if (pilhaVazia(p)) {',
-      '        return 0;                /* caso extremo: nada a estornar */',
-      '    }',
-      '    p->quantidade--;                 /* o topo passa a ser o item de baixo...   */',
-      '    *saida = p->itens[p->quantidade];/* ...e copiamos o antigo topo para *saida */',
-      '    return 1;',
-      '}'] },
-    estornar: { arquivo: 'sistema.c', linhas: [
-      'int estornar(Sistema *s)',
-      '{',
-      '    if (!desempilhar(&s->efetivadas, &op)) {',
-      '        printf("  Nada a estornar.\\n");      /* caso extremo: pilha vazia */',
-      '        return RES_NADA_A_ESTORNAR;',
-      '    }',
-      '    if (desfazerOperacao(s, op) != RES_OK) {',
-      '        empilhar(&s->efetivadas, op);        /* devolve ao topo: nada mudou */',
-      '        return RES_ESTORNO_IMPOSSIVEL;',
-      '    }',
-      '    registrarHistorico(&s->historico, op, SIT_ESTORNADA, s->hoje);',
-      '    return RES_OK;',
-      '}'] },
-    desfazerOperacao: { arquivo: 'sistema.c', linhas: [
-      'int desfazerOperacao(Sistema *s, Operacao op)',
-      '{',
-      '    Conta *origem  = buscarConta(s, op.contaOrigem);',
-      '    Conta *destino = buscarConta(s, op.contaDestino);',
-      '',
-      '    if (destino != NULL && destino->saldo + MEIO_CENTAVO < op.valor) {',
-      '        return RES_ESTORNO_IMPOSSIVEL;',
-      '    }',
-      '    if (destino != NULL) destino->saldo -= op.valor;',
-      '    if (origem != NULL)  origem->saldo  += op.valor;',
-      '    return RES_OK;',
-      '}'] },
-    agendarPagamento: { arquivo: 'sistema.c', linhas: [
-      'int agendarPagamento(Sistema *s, int conta, double valor, int data)',
-      '{',
-      '    if (!valorValido(valor))         return RES_VALOR_INVALIDO;',
-      '    valor = arredondarCentavos(valor);',
-      '    if (buscarConta(s, conta) == NULL) return RES_CONTA_INVALIDA;',
-      '    if (data <= s->hoje)             return RES_DATA_INVALIDA;',
-      '    if (agendaCheia(&s->agendados))  return RES_AGENDA_CHEIA;',
-      '',
-      '    op = criarOperacao(s->proximoNumero, TIPO_PAGAMENTO, conta, SEM_CONTA, valor);',
-      '    op.data = data;',
-      '    s->proximoNumero++;',
-      '    agendar(&s->agendados, op);',
-      '    registrarHistorico(&s->historico, op, SIT_AGENDADA, s->hoje);',
-      '    return RES_OK;',
-      '}'] },
-    agendar: { arquivo: 'agendados.c', linhas: [
-      'int agendar(Agenda *a, Operacao op)',
-      '{',
-      '    if (agendaCheia(a)) {',
-      '        return 0;',
-      '    }',
-      '    a->itens[a->quantidade] = op;   /* coloca no fim...           */',
-      '    a->quantidade++;',
-      '    /* ...e reordena: vetor, quantos itens, tamanho de cada, comparação */',
-      '    qsort(a->itens, a->quantidade, sizeof(Operacao), compararAgendados);',
-      '    return 1;',
-      '}'] },
-    compararAgendados: { arquivo: 'agendados.c', linhas: [
-      'int compararAgendados(const void *a, const void *b)',
-      '{',
-      '    const Operacao *x = (const Operacao *) a;',
-      '    const Operacao *y = (const Operacao *) b;',
-      '',
-      '    /* 1º critério: data mais cedo vem antes */',
-      '    if (x->data < y->data) return -1;',
-      '    if (x->data > y->data) return 1;',
-      '',
-      '    /* 2º critério (desempate): quem entrou antes vem antes */',
-      '    if (x->numero < y->numero) return -1;',
-      '    if (x->numero > y->numero) return 1;',
-      '    return 0;',
-      '}'] },
-    cancelarAgendado: { arquivo: 'agendados.c', linhas: [
-      'int cancelarAgendado(Agenda *a, int numero, Operacao *cancelado)',
-      '{',
-      '    int i;',
-      '    for (i = 0; i < a->quantidade; i++) {',
-      '        if (a->itens[i].numero == numero) {',
-      '            *cancelado = a->itens[i];',
-      '            removerPosicao(a, i);',
-      '            return 1;',
-      '        }',
-      '    }',
-      '    return 0;   /* não está na agenda */',
-      '}'] },
-    avancarData: { arquivo: 'sistema.c', linhas: [
-      'int avancarData(Sistema *s, int novaData)',
-      '{',
-      '    if (novaData <= s->hoje) {',
-      '        return RES_DATA_INVALIDA;',
-      '    }',
-      '    s->hoje = novaData;',
-      '',
-      '    /* A agenda está ordenada: retiramos do primeiro em diante */',
-      '    while (retirarVencido(&s->agendados, s->hoje, &op)) {',
-      '        if (aplicarOperacao(s, op) == RES_OK)',
-      '            registrarHistorico(..., SIT_AGENDADO_PAGO, op.data);',
-      '        else',
-      '            registrarHistorico(..., SIT_AGENDADO_RECUSADO, op.data);',
-      '        /* Repare: agendados NÃO são empilhados (não entram no estorno) */',
-      '    }',
-      '    return RES_OK;',
-      '}'] },
-    registrarHistorico: { arquivo: 'historico.c', linhas: [
-      'int registrarHistorico(Historico *h, Operacao op, int situacao, int data)',
-      '{',
-      '    NoHistorico *novo = (NoHistorico *) malloc(sizeof(NoHistorico));',
-      '    if (novo == NULL) {',
-      '        return 0;',
-      '    }',
-      '    novo->op = op;',
-      '    novo->situacao = situacao;',
-      '    novo->data = data;',
-      '    novo->proximo = NULL;          /* será o último: não aponta para ninguém */',
-      '',
-      '    if (h->inicio == NULL) {       /* lista vazia: o novo é o primeiro e o último */',
-      '        h->inicio = novo;',
-      '    } else {',
-      '        h->fim->proximo = novo;    /* o antigo último passa a apontar para o novo */',
-      '    }',
-      '    h->fim = novo;',
-      '    h->quantidade++;',
-      '    return 1;',
-      '}'] }
-  };
+  "arredondarCentavos": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "double arredondarCentavos(double valor)",
+      "{",
+      "    return (long long) (valor * 100 + 0.5) / 100.0;",
+      "}"
+    ]
+  },
+  "valorValido": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "int valorValido(double valor)",
+      "{",
+      "    if (!(valor > 0) || valor > VALOR_MAXIMO) {",
+      "        printf(\"  Valor deve ser maior que zero e até R$ %.2f.\\n\", VALOR_MAXIMO);",
+      "        return 0;",
+      "    }",
+      "    return 1;",
+      "}"
+    ]
+  },
+  "iniciarSistema": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "void iniciarSistema(int dataInicial)",
+      "{",
+      "    banco.contas[0] = (Conta){1, \"Ana\", 500.00};",
+      "    banco.contas[1] = (Conta){2, \"Bruno\", 200.00};",
+      "    banco.contas[2] = (Conta){3, \"Carla\", 50.00};",
+      "",
+      "    iniciarFila();",
+      "    iniciarPilha();",
+      "    iniciarAgenda();",
+      "    iniciarHistorico();",
+      "",
+      "    banco.hoje = dataInicial;",
+      "    banco.proximoNumero = 1;",
+      "}"
+    ]
+  },
+  "encerrarSistema": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "void encerrarSistema(void)",
+      "{",
+      "    iniciarHistorico();",
+      "}"
+    ]
+  },
+  "buscarConta": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "int buscarConta(int numero)",
+      "{",
+      "    int i;",
+      "    for (i = 0; i < NUM_CONTAS; i++) {",
+      "        if (banco.contas[i].numero == numero) {",
+      "            return i;",
+      "        }",
+      "    }",
+      "    return -1;",
+      "}"
+    ]
+  },
+  "aplicarOperacao": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "int aplicarOperacao(Operacao op)",
+      "{",
+      "    int origem = buscarConta(op.contaOrigem);",
+      "    int destino = buscarConta(op.contaDestino);",
+      "",
+      "    if (origem >= 0 && banco.contas[origem].saldo + MEIO_CENTAVO < op.valor) {",
+      "        return RES_SALDO_INSUFICIENTE;",
+      "    }",
+      "    if (origem >= 0)  banco.contas[origem].saldo  -= op.valor;",
+      "    if (destino >= 0) banco.contas[destino].saldo += op.valor;",
+      "    return RES_OK;",
+      "}"
+    ]
+  },
+  "desfazerOperacao": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "int desfazerOperacao(Operacao op)",
+      "{",
+      "    int origem = buscarConta(op.contaOrigem);",
+      "    int destino = buscarConta(op.contaDestino);",
+      "",
+      "    if (destino >= 0 && banco.contas[destino].saldo + MEIO_CENTAVO < op.valor) {",
+      "        return RES_ESTORNO_IMPOSSIVEL;",
+      "    }",
+      "    if (destino >= 0) banco.contas[destino].saldo -= op.valor;",
+      "    if (origem >= 0)  banco.contas[origem].saldo  += op.valor;",
+      "    return RES_OK;",
+      "}"
+    ]
+  },
+  "solicitarOperacao": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "int solicitarOperacao(int tipo, int origem, int destino, double valor)",
+      "{",
+      "    Operacao op;",
+      "    int precisaOrigem, precisaDestino;",
+      "",
+      "    if (!valorValido(valor)) {",
+      "        return RES_VALOR_INVALIDO;",
+      "    }",
+      "    valor = arredondarCentavos(valor);",
+      "",
+      "    precisaOrigem  = (tipo == TIPO_SAQUE || tipo == TIPO_TRANSFERENCIA ||",
+      "                      tipo == TIPO_PAGAMENTO);",
+      "    precisaDestino = (tipo == TIPO_DEPOSITO || tipo == TIPO_TRANSFERENCIA);",
+      "",
+      "    if ((precisaOrigem && buscarConta(origem) < 0) ||",
+      "        (precisaDestino && buscarConta(destino) < 0)) {",
+      "        printf(\"  Conta inexistente.\\n\");",
+      "        return RES_CONTA_INVALIDA;",
+      "    }",
+      "    if (!precisaOrigem)  origem  = SEM_CONTA;",
+      "    if (!precisaDestino) destino = SEM_CONTA;",
+      "    if (tipo == TIPO_TRANSFERENCIA && origem == destino) {",
+      "        printf(\"  Origem e destino são a mesma conta.\\n\");",
+      "        return RES_MESMA_CONTA;",
+      "    }",
+      "    if (filaCheia()) {",
+      "        printf(\"  Fila cheia (%d pedidos). Processe a fila antes.\\n\", CAPACIDADE_FILA);",
+      "        return RES_FILA_CHEIA;",
+      "    }",
+      "",
+      "    op = criarOperacao(banco.proximoNumero, tipo, origem, destino, valor);",
+      "    banco.proximoNumero++;",
+      "    enfileirar(op);",
+      "",
+      "    printf(\"  Pedido na fila (posição %d): \", banco.pedidos.quantidade);",
+      "    imprimirOperacao(op);",
+      "    return RES_OK;",
+      "}"
+    ]
+  },
+  "conferirHistorico": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "int conferirHistorico(int novos)",
+      "{",
+      "    if (historicoTemEspaco(novos)) return 1;",
+      "    printf(\"  Histórico cheio (%d registros). Nenhuma alteração realizada.\\n\", CAPACIDADE_HISTORICO);",
+      "    return 0;",
+      "}"
+    ]
+  },
+  "processarProximo": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "int processarProximo(void)",
+      "{",
+      "    Operacao op;",
+      "    int resultado;",
+      "",
+      "    if (filaVazia()) {",
+      "        printf(\"  Nenhum pedido na fila.\\n\");",
+      "        return RES_FILA_VAZIA;",
+      "    }",
+      "",
+      "    if (pilhaCheia()) {",
+      "        printf(\"  Limite de %d operações estornáveis atingido.\\n\", CAPACIDADE_PILHA);",
+      "        return RES_PILHA_CHEIA;",
+      "    }",
+      "",
+      "    if (!conferirHistorico(1)) return RES_HISTORICO_CHEIO;",
+      "    op = desenfileirar();",
+      "    resultado = aplicarOperacao(op);",
+      "",
+      "    if (resultado == RES_OK) {",
+      "        empilhar(op);",
+      "        registrarHistorico(op, SIT_EFETIVADA, banco.hoje);",
+      "        printf(\"  [EFETIVADA] \");",
+      "    } else {",
+      "        registrarHistorico(op, SIT_RECUSADA, banco.hoje);",
+      "        printf(\"  [RECUSADA: saldo insuficiente] \");",
+      "    }",
+      "    imprimirOperacao(op);",
+      "    return resultado;",
+      "}"
+    ]
+  },
+  "processarTodos": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "int processarTodos(void)",
+      "{",
+      "    int atendidos = 0, resultado;",
+      "",
+      "    if (filaVazia()) {",
+      "        printf(\"  Nenhum pedido na fila.\\n\");",
+      "        return 0;",
+      "    }",
+      "    while (!filaVazia()) {",
+      "        if ((resultado = processarProximo()) == RES_PILHA_CHEIA || resultado == RES_HISTORICO_CHEIO) {",
+      "            break;",
+      "        }",
+      "        atendidos++;",
+      "    }",
+      "    return atendidos;",
+      "}"
+    ]
+  },
+  "estornar": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "int estornar(void)",
+      "{",
+      "    Operacao op;",
+      "",
+      "    if (!pilhaVazia() && !conferirHistorico(1)) return RES_HISTORICO_CHEIO;",
+      "    op = desempilhar();",
+      "    if (op.numero == 0) {",
+      "        printf(\"  Nada a estornar.\\n\");",
+      "        return RES_NADA_A_ESTORNAR;",
+      "    }",
+      "    if (desfazerOperacao(op) != RES_OK) {",
+      "        empilhar(op);",
+      "        printf(\"  Estorno impossível: a conta %d já não tem R$ %.2f.\\n\",",
+      "               op.contaDestino, op.valor);",
+      "        printf(\"  A operação continua no topo da pilha: \");",
+      "        imprimirOperacao(op);",
+      "        return RES_ESTORNO_IMPOSSIVEL;",
+      "    }",
+      "    registrarHistorico(op, SIT_ESTORNADA, banco.hoje);",
+      "    printf(\"  [ESTORNADA] \");",
+      "    imprimirOperacao(op);",
+      "    return RES_OK;",
+      "}"
+    ]
+  },
+  "agendarPagamento": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "int agendarPagamento(int conta, double valor, int data)",
+      "{",
+      "    Operacao op;",
+      "",
+      "    if (!valorValido(valor)) {",
+      "        return RES_VALOR_INVALIDO;",
+      "    }",
+      "    valor = arredondarCentavos(valor);",
+      "    if (buscarConta(conta) < 0) {",
+      "        printf(\"  Conta inexistente.\\n\");",
+      "        return RES_CONTA_INVALIDA;",
+      "    }",
+      "    if (data <= banco.hoje) {",
+      "        printf(\"  A data deve ser depois de hoje (\");",
+      "        imprimirData(banco.hoje);",
+      "        printf(\"). Para hoje, use o pagamento imediato.\\n\");",
+      "        return RES_DATA_INVALIDA;",
+      "    }",
+      "    if (agendaCheia()) {",
+      "        printf(\"  Agenda cheia (%d pagamentos).\\n\", CAPACIDADE_AGENDA);",
+      "        return RES_AGENDA_CHEIA;",
+      "    }",
+      "",
+      "    if (!conferirHistorico(1)) return RES_HISTORICO_CHEIO;",
+      "    op = criarOperacao(banco.proximoNumero, TIPO_PAGAMENTO, conta, SEM_CONTA, valor);",
+      "    op.data = data;",
+      "    banco.proximoNumero++;",
+      "    agendar(op);",
+      "    registrarHistorico(op, SIT_AGENDADA, banco.hoje);",
+      "",
+      "    printf(\"  [AGENDADO] \");",
+      "    imprimirOperacao(op);",
+      "    return RES_OK;",
+      "}"
+    ]
+  },
+  "cancelarAgendamento": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "int cancelarAgendamento(int numero)",
+      "{",
+      "    Operacao op;",
+      "",
+      "    int i;",
+      "    for (i = 0; i < banco.agendados.quantidade; i++) {",
+      "        if (banco.agendados.itens[i].numero == numero && !conferirHistorico(1)) return RES_HISTORICO_CHEIO;",
+      "    }",
+      "    op = cancelarAgendado(numero);",
+      "    if (op.numero == 0) {",
+      "        printf(\"  Não há pagamento agendado com número %d\"",
+      "               \" (talvez já tenha sido executado).\\n\", numero);",
+      "        return RES_NAO_ENCONTRADO;",
+      "    }",
+      "    registrarHistorico(op, SIT_CANCELADA, banco.hoje);",
+      "    printf(\"  [CANCELADO] \");",
+      "    imprimirOperacao(op);",
+      "    return RES_OK;",
+      "}"
+    ]
+  },
+  "avancarData": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "int avancarData(int novaData)",
+      "{",
+      "    Operacao op;",
+      "    int executados = 0, vencidos = 0, i;",
+      "",
+      "    if (novaData <= banco.hoje) {",
+      "        printf(\"  A nova data precisa ser depois de \");",
+      "        imprimirData(banco.hoje);",
+      "        printf(\".\\n\");",
+      "        return RES_DATA_INVALIDA;",
+      "    }",
+      "    for (i = 0; i < banco.agendados.quantidade; i++) {",
+      "        if (banco.agendados.itens[i].data <= novaData) vencidos++;",
+      "    }",
+      "    if (!conferirHistorico(vencidos)) return RES_HISTORICO_CHEIO;",
+      "    banco.hoje = novaData;",
+      "    printf(\"  Data atual: \");",
+      "    imprimirData(banco.hoje);",
+      "    printf(\"\\n\");",
+      "",
+      "    while ((op = retirarVencido(banco.hoje)).numero != 0) {",
+      "        executados++;",
+      "        if (aplicarOperacao(op) == RES_OK) {",
+      "            registrarHistorico(op, SIT_AGENDADO_PAGO, op.data);",
+      "            printf(\"  [AGENDADO PAGO] \");",
+      "        } else {",
+      "            registrarHistorico(op, SIT_AGENDADO_RECUSADO, op.data);",
+      "            printf(\"  [AGENDADO RECUSADO: saldo insuficiente] \");",
+      "        }",
+      "        imprimirOperacao(op);",
+      "",
+      "    }",
+      "    if (executados == 0) {",
+      "        printf(\"  Nenhum pagamento agendado venceu.\\n\");",
+      "    }",
+      "    return RES_OK;",
+      "}"
+    ]
+  },
+  "mostrarContas": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "void mostrarContas(void)",
+      "{",
+      "    int i;",
+      "    for (i = 0; i < NUM_CONTAS; i++) {",
+      "        printf(\"   Conta %d  %-8s  R$ %9.2f\\n\",",
+      "               banco.contas[i].numero, banco.contas[i].titular, banco.contas[i].saldo);",
+      "    }",
+      "}"
+    ]
+  },
+  "mostrarSituacao": {
+    "arquivo": "sistema.c",
+    "linhas": [
+      "void mostrarSituacao(void)",
+      "{",
+      "    printf(\"\\n  Data: \");",
+      "    imprimirData(banco.hoje);",
+      "    printf(\"\\n\\n  CONTAS\\n\");",
+      "    mostrarContas();",
+      "    printf(\"\\n  FILA de pedidos imediatos (1º = próximo a ser atendido)\\n\");",
+      "    mostrarFila();",
+      "    printf(\"\\n  PILHA de efetivadas (topo = próximo estorno)\\n\");",
+      "    mostrarPilha();",
+      "    printf(\"\\n  AGENDA de pagamentos (ordem de execução)\\n\");",
+      "    mostrarAgenda();",
+      "}"
+    ]
+  },
+  "iniciarFila": {
+    "arquivo": "fila.c",
+    "linhas": [
+      "void iniciarFila(void)",
+      "{",
+      "    banco.pedidos.inicio = 0;",
+      "    banco.pedidos.quantidade = 0;",
+      "}"
+    ]
+  },
+  "filaVazia": {
+    "arquivo": "fila.c",
+    "linhas": [
+      "int filaVazia(void)",
+      "{",
+      "    return banco.pedidos.quantidade == 0;",
+      "}"
+    ]
+  },
+  "filaCheia": {
+    "arquivo": "fila.c",
+    "linhas": [
+      "int filaCheia(void)",
+      "{",
+      "    return banco.pedidos.quantidade == CAPACIDADE_FILA;",
+      "}"
+    ]
+  },
+  "enfileirar": {
+    "arquivo": "fila.c",
+    "linhas": [
+      "int enfileirar(Operacao op)",
+      "{",
+      "    int fim;",
+      "",
+      "    if (filaCheia()) {",
+      "        return 0;",
+      "    }",
+      "    fim = (banco.pedidos.inicio + banco.pedidos.quantidade) % CAPACIDADE_FILA;",
+      "    banco.pedidos.itens[fim] = op;",
+      "    banco.pedidos.quantidade++;",
+      "    return 1;",
+      "}"
+    ]
+  },
+  "desenfileirar": {
+    "arquivo": "fila.c",
+    "linhas": [
+      "Operacao desenfileirar(void)",
+      "{",
+      "    Operacao saida = {0}; /* numero 0 indica que não havia operação. */",
+      "    if (filaVazia()) return saida;",
+      "    saida = banco.pedidos.itens[banco.pedidos.inicio];",
+      "    banco.pedidos.inicio = (banco.pedidos.inicio + 1) % CAPACIDADE_FILA;",
+      "    banco.pedidos.quantidade--;",
+      "    return saida;",
+      "}"
+    ]
+  },
+  "mostrarFila": {
+    "arquivo": "fila.c",
+    "linhas": [
+      "void mostrarFila(void)",
+      "{",
+      "    int i, posicao;",
+      "",
+      "    if (filaVazia()) {",
+      "        printf(\"   (fila vazia)\\n\");",
+      "        return;",
+      "    }",
+      "    for (i = 0; i < banco.pedidos.quantidade; i++) {",
+      "        posicao = (banco.pedidos.inicio + i) % CAPACIDADE_FILA;",
+      "        printf(\"   %dº  \", i + 1);",
+      "        imprimirOperacao(banco.pedidos.itens[posicao]);",
+      "    }",
+      "}"
+    ]
+  },
+  "iniciarPilha": {
+    "arquivo": "pilha.c",
+    "linhas": [
+      "void iniciarPilha(void)",
+      "{",
+      "",
+      "    banco.efetivadas.quantidade = 0;",
+      "}"
+    ]
+  },
+  "pilhaVazia": {
+    "arquivo": "pilha.c",
+    "linhas": [
+      "int pilhaVazia(void)",
+      "{",
+      "    return banco.efetivadas.quantidade == 0;",
+      "}"
+    ]
+  },
+  "pilhaCheia": {
+    "arquivo": "pilha.c",
+    "linhas": [
+      "int pilhaCheia(void)",
+      "{",
+      "    return banco.efetivadas.quantidade == CAPACIDADE_PILHA;",
+      "}"
+    ]
+  },
+  "empilhar": {
+    "arquivo": "pilha.c",
+    "linhas": [
+      "int empilhar(Operacao op)",
+      "{",
+      "    if (pilhaCheia()) {",
+      "        return 0;",
+      "    }",
+      "    banco.efetivadas.itens[banco.efetivadas.quantidade] = op;",
+      "    banco.efetivadas.quantidade++;",
+      "    return 1;",
+      "}"
+    ]
+  },
+  "desempilhar": {
+    "arquivo": "pilha.c",
+    "linhas": [
+      "Operacao desempilhar(void)",
+      "{",
+      "    Operacao saida = {0}; /* numero 0 indica que não havia operação. */",
+      "    if (pilhaVazia()) return saida;",
+      "    banco.efetivadas.quantidade--;",
+      "    saida = banco.efetivadas.itens[banco.efetivadas.quantidade];",
+      "    return saida;",
+      "}"
+    ]
+  },
+  "mostrarPilha": {
+    "arquivo": "pilha.c",
+    "linhas": [
+      "void mostrarPilha(void)",
+      "{",
+      "    int i;",
+      "",
+      "    if (pilhaVazia()) {",
+      "        printf(\"   (pilha vazia)\\n\");",
+      "        return;",
+      "    }",
+      "",
+      "    for (i = banco.efetivadas.quantidade - 1; i >= 0; i--) {",
+      "        printf(\"   %s \", (i == banco.efetivadas.quantidade - 1) ? \"TOPO ->\" : \"       \");",
+      "        imprimirOperacao(banco.efetivadas.itens[i]);",
+      "    }",
+      "}"
+    ]
+  },
+  "iniciarAgenda": {
+    "arquivo": "agendados.c",
+    "linhas": [
+      "void iniciarAgenda(void)",
+      "{",
+      "    banco.agendados.quantidade = 0;",
+      "}"
+    ]
+  },
+  "agendaVazia": {
+    "arquivo": "agendados.c",
+    "linhas": [
+      "int agendaVazia(void)",
+      "{",
+      "    return banco.agendados.quantidade == 0;",
+      "}"
+    ]
+  },
+  "agendaCheia": {
+    "arquivo": "agendados.c",
+    "linhas": [
+      "int agendaCheia(void)",
+      "{",
+      "    return banco.agendados.quantidade == CAPACIDADE_AGENDA;",
+      "}"
+    ]
+  },
+  "compararAgendados": {
+    "arquivo": "agendados.c",
+    "linhas": [
+      "int compararAgendados(Operacao x, Operacao y)",
+      "{",
+      "",
+      "    if (x.data < y.data) return -1;",
+      "    if (x.data > y.data) return 1;",
+      "",
+      "    if (x.numero < y.numero) return -1;",
+      "    if (x.numero > y.numero) return 1;",
+      "    return 0;",
+      "}"
+    ]
+  },
+  "ordenarAgenda": {
+    "arquivo": "agendados.c",
+    "linhas": [
+      "void ordenarAgenda(void)",
+      "{",
+      "    int i, j;",
+      "    Operacao atual;",
+      "    for (i = 1; i < banco.agendados.quantidade; i++) {",
+      "        atual = banco.agendados.itens[i];",
+      "        j = i - 1;",
+      "        while (j >= 0 && compararAgendados(banco.agendados.itens[j], atual) > 0) {",
+      "            banco.agendados.itens[j + 1] = banco.agendados.itens[j];",
+      "            j--;",
+      "        }",
+      "        banco.agendados.itens[j + 1] = atual;",
+      "    }",
+      "}"
+    ]
+  },
+  "agendar": {
+    "arquivo": "agendados.c",
+    "linhas": [
+      "int agendar(Operacao op)",
+      "{",
+      "    if (agendaCheia()) {",
+      "        return 0;",
+      "    }",
+      "    banco.agendados.itens[banco.agendados.quantidade] = op;",
+      "    banco.agendados.quantidade++;",
+      "",
+      "    /* Inserção: leva o último item até sua posição, por data e número. */",
+      "    ordenarAgenda();",
+      "    return 1;",
+      "}"
+    ]
+  },
+  "removerPosicao": {
+    "arquivo": "agendados.c",
+    "linhas": [
+      "void removerPosicao(int pos)",
+      "{",
+      "    int i;",
+      "    for (i = pos; i < banco.agendados.quantidade - 1; i++) {",
+      "        banco.agendados.itens[i] = banco.agendados.itens[i + 1];",
+      "    }",
+      "    banco.agendados.quantidade--;",
+      "}"
+    ]
+  },
+  "cancelarAgendado": {
+    "arquivo": "agendados.c",
+    "linhas": [
+      "Operacao cancelarAgendado(int numero)",
+      "{",
+      "    Operacao cancelado = {0};",
+      "    int i;",
+      "    for (i = 0; i < banco.agendados.quantidade; i++) {",
+      "        if (banco.agendados.itens[i].numero == numero) {",
+      "            cancelado = banco.agendados.itens[i];",
+      "            removerPosicao(i);",
+      "            return cancelado;",
+      "        }",
+      "    }",
+      "    return cancelado;",
+      "}"
+    ]
+  },
+  "retirarVencido": {
+    "arquivo": "agendados.c",
+    "linhas": [
+      "Operacao retirarVencido(int hoje)",
+      "{",
+      "    Operacao saida = {0};",
+      "    if (agendaVazia() || banco.agendados.itens[0].data > hoje) return saida;",
+      "    saida = banco.agendados.itens[0];",
+      "    removerPosicao(0);",
+      "    return saida;",
+      "}"
+    ]
+  },
+  "mostrarAgenda": {
+    "arquivo": "agendados.c",
+    "linhas": [
+      "void mostrarAgenda(void)",
+      "{",
+      "    int i;",
+      "    if (agendaVazia()) {",
+      "        printf(\"   (nenhum pagamento agendado)\\n\");",
+      "        return;",
+      "    }",
+      "    for (i = 0; i < banco.agendados.quantidade; i++) {",
+      "        printf(\"   \");",
+      "        imprimirOperacao(banco.agendados.itens[i]);",
+      "    }",
+      "}"
+    ]
+  },
+  "iniciarHistorico": {
+    "arquivo": "historico.c",
+    "linhas": [
+      "void iniciarHistorico(void)",
+      "{",
+      "    banco.historico.quantidade = 0;",
+      "}"
+    ]
+  },
+  "historicoTemEspaco": {
+    "arquivo": "historico.c",
+    "linhas": [
+      "int historicoTemEspaco(int novos)",
+      "{",
+      "    return novos >= 0 && novos <= CAPACIDADE_HISTORICO - banco.historico.quantidade;",
+      "}"
+    ]
+  },
+  "registrarHistorico": {
+    "arquivo": "historico.c",
+    "linhas": [
+      "int registrarHistorico(Operacao op, int situacao, int data)",
+      "{",
+      "    int pos = banco.historico.quantidade;",
+      "    if (!historicoTemEspaco(1)) return 0;",
+      "    banco.historico.itens[pos].op = op;",
+      "    banco.historico.itens[pos].situacao = situacao;",
+      "    banco.historico.itens[pos].data = data;",
+      "    banco.historico.quantidade++;",
+      "    return 1;",
+      "}"
+    ]
+  },
+  "imprimirSituacao": {
+    "arquivo": "historico.c",
+    "linhas": [
+      "void imprimirSituacao(int situacao)",
+      "{",
+      "    switch (situacao) {",
+      "        case SIT_EFETIVADA:         printf(\"EFETIVADA         \"); break;",
+      "        case SIT_RECUSADA:          printf(\"RECUSADA (saldo)  \"); break;",
+      "        case SIT_ESTORNADA:         printf(\"ESTORNADA         \"); break;",
+      "        case SIT_AGENDADA:          printf(\"AGENDADA          \"); break;",
+      "        case SIT_CANCELADA:         printf(\"AGEND. CANCELADA  \"); break;",
+      "        case SIT_AGENDADO_PAGO:     printf(\"AGENDADO PAGO     \"); break;",
+      "        case SIT_AGENDADO_RECUSADO: printf(\"AGEND. RECUSADO   \"); break;",
+      "        default:                    printf(\"?                 \"); break;",
+      "    }",
+      "}"
+    ]
+  },
+  "mostrarHistorico": {
+    "arquivo": "historico.c",
+    "linhas": [
+      "void mostrarHistorico(int conta)",
+      "{",
+      "    int i, mostrados = 0;",
+      "    RegistroHistorico atual;",
+      "    for (i = 0; i < banco.historico.quantidade; i++) {",
+      "        atual = banco.historico.itens[i];",
+      "        if (conta != 0 && atual.op.contaOrigem != conta && atual.op.contaDestino != conta) continue;",
+      "        printf(\"   \");",
+      "        imprimirData(atual.data);",
+      "        printf(\"  \");",
+      "        imprimirSituacao(atual.situacao);",
+      "        imprimirOperacao(atual.op);",
+      "        mostrados++;",
+      "    }",
+      "    if (mostrados == 0) printf(\"   (nenhum registro)\\n\");",
+      "}"
+    ]
+  }
+};
 
   /* Índice da primeira linha da função que contém o trecho. */
   function L(fn, trecho) {
@@ -313,7 +826,7 @@
       this.hoje = dataInicial;
       this.proximoNumero = 1;
       this.emMaos = null;      /* a variável local "op" da função C em execução */
-      this.proximoNo = 1;      /* identificador visual dos nós do histórico */
+      this.proximoNo = 1;      /* identificador visual dos registros do histórico */
     }
 
     buscarConta(numero) { return this.contas.find(c => c.numero === numero) || null; }
@@ -353,13 +866,21 @@
       return true;
     }
 
+    conferirHistorico(P, novos) {
+      if (this.historico.length + novos <= CAPACIDADE_HISTORICO) return true;
+      this.passo(P, { fn: 'conferirHistorico', linha: L('conferirHistorico', 'printf'), tom: 'erro',
+        legenda: 'O vetor do histórico está cheio. O comando é recusado antes de alterar saldos ou estruturas.',
+        log: ['  Histórico cheio (' + CAPACIDADE_HISTORICO + ' registros). Nenhuma alteração realizada.'] });
+      return false;
+    }
+
     registrar(P, op, situacao, data, extra) {
       const no = { id: this.proximoNo++, op: { ...op }, situacao, data };
       this.historico.push(no);
       this.passo(P, {
-        fn: 'registrarHistorico', linha: L('registrarHistorico', 'h->fim = novo'),
+        fn: 'registrarHistorico', linha: L('registrarHistorico', 'banco.historico.quantidade++'),
         foco: { area: 'historico', chave: 'h' + no.id },
-        legenda: 'malloc cria um nó novo e ele é ligado no fim da lista: o antigo último passa a apontar para ele.',
+        legenda: 'O evento ocupa a próxima posição livre do vetor do histórico, e quantidade aumenta em 1.',
         ...extra
       });
     }
@@ -405,7 +926,7 @@
       this.fila.itens[fim] = op;
       this.fila.quantidade++;
       this.emMaos = null;
-      this.passo(P, { fn: 'enfileirar', linha: L('enfileirar', 'f->itens[fim] = op'),
+      this.passo(P, { fn: 'enfileirar', linha: L('enfileirar', 'banco.pedidos.itens[fim] = op'),
         foco: { area: 'fila', chave: 'op' + op.numero },
         legenda: 'A ficha entra no FIM da fila, em itens[' + fim + ']. Ela espera até todos que chegaram antes serem atendidos.',
         log: ['  Pedido na fila (posição ' + this.fila.quantidade + '): ' + textoOperacao(op)] });
@@ -427,13 +948,14 @@
         return 'pilhaCheia';
       }
 
+      if (!this.conferirHistorico(P, 1)) return 'historicoCheio';
       const indice = this.fila.inicio;
       const op = this.fila.itens[indice];
       this.fila.itens[indice] = null;
       this.fila.inicio = (this.fila.inicio + 1) % CAPACIDADE_FILA;
       this.fila.quantidade--;
       this.emMaos = op;
-      this.passo(P, { fn: 'desenfileirar', linha: L('desenfileirar', '*saida = f->itens'),
+      this.passo(P, { fn: 'desenfileirar', linha: L('desenfileirar', 'saida = banco.pedidos.itens'),
         foco: { area: 'op', chave: 'op' + op.numero },
         legenda: 'FIFO: sai o primeiro da fila, itens[' + indice + ']. O início anda uma posição e o próximo passa a ser o primeiro.' });
 
@@ -441,7 +963,7 @@
       if (ok) {
         this.pilha.push(op);
         this.emMaos = null;
-        this.passo(P, { fn: 'empilhar', linha: L('empilhar', 'p->itens[p->quantidade] = op'),
+        this.passo(P, { fn: 'empilhar', linha: L('empilhar', 'banco.efetivadas.itens[banco.efetivadas.quantidade] = op'),
           foco: { area: 'pilha', chave: 'op' + op.numero },
           legenda: 'Efetivada: a ficha vai para o TOPO da pilha. Se alguém pedir estorno, é ela que sai primeiro.' });
         this.registrar(P, op, SIT_EFETIVADA, this.hoje, { tom: 'ok', log: ['  [EFETIVADA] ' + textoOperacao(op)] });
@@ -461,7 +983,7 @@
       const ok = !(origem && origem.saldo + MEIO_CENTAVO < op.valor);
       const fn = 'aplicarOperacao';
       if (origem) {
-        this.passo(P, { fn, linha: L(fn, 'origem->saldo + MEIO_CENTAVO'), tom: ok ? 'ok' : 'erro',
+        this.passo(P, { fn, linha: L(fn, 'banco.contas[origem].saldo + MEIO_CENTAVO'), tom: ok ? 'ok' : 'erro',
           foco: { area: 'conta', chave: 'c' + origem.numero },
           legenda: origem.titular + ' tem ' + reais(origem.saldo) + ' e precisa de ' + reais(op.valor) + (ok ? ': tem saldo.' : ': saldo insuficiente.') });
       }
@@ -472,7 +994,7 @@
       const partes = [];
       if (origem) partes.push('sai ' + reais(op.valor) + ' de ' + origem.titular);
       if (destino) partes.push('entra em ' + destino.titular);
-      this.passo(P, { fn, linha: L(fn, origem ? 'origem->saldo  -=' : 'destino->saldo +='), tom: 'ok',
+      this.passo(P, { fn, linha: L(fn, origem ? 'banco.contas[origem].saldo  -=' : 'banco.contas[destino].saldo +='), tom: 'ok',
         foco: { area: 'conta', chave: 'c' + (origem || destino).numero },
         legenda: 'Regra única do banco: ' + partes.join(' e ') + '.' });
       return true;
@@ -487,7 +1009,7 @@
         return P;
       }
       while (this.fila.quantidade > 0) {
-        if (this.processarProximo(P) === 'pilhaCheia') break;
+        if (['pilhaCheia', 'historicoCheio'].includes(this.processarProximo(P))) break;
       }
       return P;
     }
@@ -501,9 +1023,10 @@
           log: ['  Nada a estornar.'] });
         return P;
       }
+      if (!this.conferirHistorico(P, 1)) return P;
       const op = this.pilha.pop();
       this.emMaos = op;
-      this.passo(P, { fn: 'desempilhar', linha: L('desempilhar', 'p->quantidade--'),
+      this.passo(P, { fn: 'desempilhar', linha: L('desempilhar', 'banco.efetivadas.quantidade--'),
         foco: { area: 'op', chave: 'op' + op.numero },
         legenda: 'LIFO: sai o TOPO, a última operação efetivada (#' + op.numero + ').' });
 
@@ -512,14 +1035,14 @@
       const fn = 'desfazerOperacao';
       const ok = !(destino && destino.saldo + MEIO_CENTAVO < op.valor);
       if (destino) {
-        this.passo(P, { fn, linha: L(fn, 'destino->saldo + MEIO_CENTAVO'), tom: ok ? 'ok' : 'erro',
+        this.passo(P, { fn, linha: L(fn, 'banco.contas[destino].saldo + MEIO_CENTAVO'), tom: ok ? 'ok' : 'erro',
           foco: { area: 'conta', chave: 'c' + destino.numero },
           legenda: 'Para desfazer, o dinheiro volta do destino. ' + destino.titular + ' tem ' + reais(destino.saldo) + (ok ? ', dá para devolver.' : ' e já não tem ' + reais(op.valor) + '.') });
       }
       if (!ok) {
         this.pilha.push(op);
         this.emMaos = null;
-        this.passo(P, { fn: 'estornar', linha: L('estornar', 'empilhar(&s->efetivadas, op)'), tom: 'erro',
+        this.passo(P, { fn: 'estornar', linha: L('estornar', 'empilhar(op)'), tom: 'erro',
           foco: { area: 'pilha', chave: 'op' + op.numero },
           legenda: 'Estorno impossível: a ficha volta para o topo da pilha e nenhum saldo muda.',
           log: ['  Estorno impossível: a conta ' + op.contaDestino + ' já não tem R$ ' + f2(op.valor) + '.',
@@ -531,7 +1054,7 @@
       const partes = [];
       if (destino) partes.push('sai de ' + destino.titular);
       if (origem) partes.push('volta para ' + origem.titular);
-      this.passo(P, { fn, linha: L(fn, destino ? 'destino->saldo -=' : 'origem->saldo  +='), tom: 'ok',
+      this.passo(P, { fn, linha: L(fn, destino ? 'banco.contas[destino].saldo -=' : 'banco.contas[origem].saldo  +='), tom: 'ok',
         foco: { area: 'conta', chave: 'c' + (origem || destino).numero },
         legenda: 'O caminho inverso: ' + reais(op.valor) + ' ' + partes.join(' e ') + '. Só esta operação é desfeita; o efeito das outras continua.' });
       this.emMaos = null;
@@ -539,7 +1062,7 @@
       return P;
     }
 
-    /* Opção 8: AGENDA ordenada com qsort */
+    /* Opção 8: AGENDA ordenada por inserção */
     agendarPagamento(conta, valor, data) {
       const P = [];
       const fn = 'agendarPagamento';
@@ -551,7 +1074,7 @@
         return P;
       }
       if (data <= this.hoje) {
-        this.passo(P, { fn, linha: L(fn, 'data <= s->hoje'), tom: 'erro',
+        this.passo(P, { fn, linha: L(fn, 'data <= banco.hoje'), tom: 'erro',
           legenda: 'A agenda é só para datas futuras. Para hoje, use o pagamento imediato (ele entra na fila).',
           log: ['  A data deve ser depois de hoje (' + textoData(this.hoje) + '). Para hoje, use o pagamento imediato.'] });
         return P;
@@ -562,29 +1085,38 @@
           log: ['  Agenda cheia (' + CAPACIDADE_AGENDA + ' pagamentos).'] });
         return P;
       }
+      if (!this.conferirHistorico(P, 1)) return P;
       const op = criarOperacao(this.proximoNumero, TIPO_PAGAMENTO, conta, SEM_CONTA, valor);
       op.data = data;
       this.proximoNumero++;
 
       this.agenda.push(op);
-      this.passo(P, { fn: 'agendar', linha: L('agendar', 'a->itens[a->quantidade] = op'),
+      this.passo(P, { fn: 'agendar', linha: L('agendar', 'banco.agendados.itens[banco.agendados.quantidade] = op'),
         foco: { area: 'agenda', chave: 'op' + op.numero },
         legenda: 'A ficha #' + op.numero + ' (' + textoData(data) + ') é colocada no FIM do vetor, ainda fora de ordem.' });
 
       const empate = this.agenda.some(o => o !== op && o.data === op.data);
       const antes = this.agenda.map(o => o.numero).join(',');
-      this.agenda.sort(compararAgendados);
+      for (let i = 1; i < this.agenda.length; i++) {
+        const atual = this.agenda[i];
+        let j = i - 1;
+        while (j >= 0 && compararAgendados(this.agenda[j], atual) > 0) {
+          this.agenda[j + 1] = this.agenda[j];
+          j--;
+        }
+        this.agenda[j + 1] = atual;
+      }
       const mudou = antes !== this.agenda.map(o => o.numero).join(',');
       const pos = this.agenda.indexOf(op);
       let legenda;
       if (empate) {
-        legenda = 'qsort com compararAgendados: mesma data de outro pagamento, então desempata pelo número de entrada. Quem entrou antes executa antes (FIFO no mesmo dia).';
+        legenda = 'Ordenação por inserção com compararAgendados: mesma data de outro pagamento, então desempata pelo número de entrada. Quem entrou antes executa antes (FIFO no mesmo dia).';
       } else if (mudou) {
-        legenda = 'qsort com compararAgendados: data mais cedo vem antes, então a #' + op.numero + ' sobe para a posição ' + (pos + 1) + '.';
+        legenda = 'Ordenação por inserção com compararAgendados: data mais cedo vem antes, então a #' + op.numero + ' sobe para a posição ' + (pos + 1) + '.';
       } else {
-        legenda = 'qsort com compararAgendados: a #' + op.numero + ' já está no lugar certo (é a data mais distante).';
+        legenda = 'Ordenação por inserção com compararAgendados: a #' + op.numero + ' já está no lugar certo (é a data mais distante).';
       }
-      this.passo(P, { fn: 'compararAgendados', linha: L('compararAgendados', empate ? 'x->numero < y->numero' : 'x->data < y->data'),
+      this.passo(P, { fn: 'compararAgendados', linha: L('compararAgendados', empate ? 'x.numero < y.numero' : 'x.data < y.data'),
         foco: { area: 'agenda', chave: 'op' + op.numero }, legenda });
 
       this.registrar(P, op, SIT_AGENDADA, this.hoje, { tom: 'ok',
@@ -598,11 +1130,12 @@
       const P = [];
       const i = this.agenda.findIndex(o => o.numero === numero);
       if (i < 0) {
-        this.passo(P, { fn: 'cancelarAgendado', linha: L('cancelarAgendado', 'return 0'), tom: 'erro',
+        this.passo(P, { fn: 'cancelarAgendado', linha: L('cancelarAgendado', 'return cancelado;'), tom: 'erro',
           legenda: 'O laço percorreu a agenda inteira e não achou esse número. Talvez já tenha sido executado.',
           log: ['  Não há pagamento agendado com número ' + numero + ' (talvez já tenha sido executado).'] });
         return P;
       }
+      if (!this.conferirHistorico(P, 1)) return P;
       const op = this.agenda.splice(i, 1)[0];
       this.emMaos = op;
       this.passo(P, { fn: 'cancelarAgendado', linha: L('cancelarAgendado', 'removerPosicao'),
@@ -618,13 +1151,14 @@
       const P = [];
       const fn = 'avancarData';
       if (novaData <= this.hoje) {
-        this.passo(P, { fn, linha: L(fn, 'novaData <= s->hoje'), tom: 'erro',
+        this.passo(P, { fn, linha: L(fn, 'novaData <= banco.hoje'), tom: 'erro',
           legenda: 'O tempo só anda para frente.',
           log: ['  A nova data precisa ser depois de ' + textoData(this.hoje) + '.'] });
         return P;
       }
+      if (!this.conferirHistorico(P, this.agenda.filter(o => o.data <= novaData).length)) return P;
       this.hoje = novaData;
-      this.passo(P, { fn, linha: L(fn, 's->hoje = novaData'), foco: { area: 'data' },
+      this.passo(P, { fn, linha: L(fn, 'banco.hoje = novaData'), foco: { area: 'data' },
         legenda: 'O calendário avança para ' + textoData(novaData) + '. Agora executamos os agendados que venceram.',
         log: ['  Data atual: ' + textoData(novaData)] });
 
@@ -633,7 +1167,7 @@
         const op = this.agenda.shift();
         executados++;
         this.emMaos = op;
-        this.passo(P, { fn, linha: L(fn, 'while (retirarVencido'),
+        this.passo(P, { fn, linha: L(fn, 'while ((op = retirarVencido'),
           foco: { area: 'op', chave: 'op' + op.numero },
           legenda: 'A agenda está ordenada, então basta olhar o primeiro: a #' + op.numero + ' venceu (' + textoData(op.data) + ').' });
         const ok = this.conferirEAplicar(P, op);
@@ -649,7 +1183,7 @@
         }
       }
       if (executados === 0) {
-        this.passo(P, { fn, linha: L(fn, 'while (retirarVencido'),
+        this.passo(P, { fn, linha: L(fn, 'while ((op = retirarVencido'),
           legenda: 'O primeiro da agenda ainda não venceu, então nada executa.',
           log: ['  Nenhum pagamento agendado venceu.'] });
       }

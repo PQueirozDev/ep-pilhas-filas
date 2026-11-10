@@ -1,112 +1,106 @@
-/*
- * agendados.c
- * -----------
- * Agenda de pagamentos ordenada por data com qsort (ver agendados.h).
- */
+/* Agenda em vetor, ordenada por inserção (data, depois número).
+ * O estado fica no banco global declarado em sistema.h.
+ * Remoções devolvem uma Operacao por valor; numero 0 indica ausência. */
 
 #include <stdio.h>
-#include <stdlib.h>     /* qsort */
-#include "agendados.h"
 
-void iniciarAgenda(Agenda *a)
+#include "sistema.h"
+
+void iniciarAgenda(void)
 {
-    a->quantidade = 0;
+    banco.agendados.quantidade = 0;
 }
 
-int agendaVazia(Agenda *a)
+int agendaVazia(void)
 {
-    return a->quantidade == 0;
+    return banco.agendados.quantidade == 0;
 }
 
-int agendaCheia(Agenda *a)
+int agendaCheia(void)
 {
-    return a->quantidade == CAPACIDADE_AGENDA;
+    return banco.agendados.quantidade == CAPACIDADE_AGENDA;
 }
 
-/*
- * Função de comparação para o qsort.
- *
- * O qsort serve para QUALQUER tipo de vetor, por isso ele nos entrega
- * ponteiros genéricos "const void *" (endereço de "algo" que não deve ser
- * alterado). Nós sabemos que esse "algo" é uma Operacao, então
- * convertemos para "const Operacao *" e lemos os campos com "->".
- *
- * Regra do qsort: devolver número NEGATIVO se a vem antes de b,
- * POSITIVO se a vem depois, e 0 se tanto faz.
- */
-int compararAgendados(const void *a, const void *b)
+int compararAgendados(Operacao x, Operacao y)
 {
-    const Operacao *x = (const Operacao *) a;
-    const Operacao *y = (const Operacao *) b;
 
-    /* 1º critério: data mais cedo vem antes */
-    if (x->data < y->data) return -1;
-    if (x->data > y->data) return 1;
+    if (x.data < y.data) return -1;
+    if (x.data > y.data) return 1;
 
-    /* 2º critério (desempate): mesma data -> quem entrou antes vem antes.
-     * Sem isso o qsort poderia inverter dois pagamentos do mesmo dia. */
-    if (x->numero < y->numero) return -1;
-    if (x->numero > y->numero) return 1;
+    if (x.numero < y.numero) return -1;
+    if (x.numero > y.numero) return 1;
     return 0;
 }
 
-int agendar(Agenda *a, Operacao op)
+void ordenarAgenda(void)
 {
-    if (agendaCheia(a)) {
+    int i, j;
+    Operacao atual;
+    for (i = 1; i < banco.agendados.quantidade; i++) {
+        atual = banco.agendados.itens[i];
+        j = i - 1;
+        while (j >= 0 && compararAgendados(banco.agendados.itens[j], atual) > 0) {
+            banco.agendados.itens[j + 1] = banco.agendados.itens[j];
+            j--;
+        }
+        banco.agendados.itens[j + 1] = atual;
+    }
+}
+
+int agendar(Operacao op)
+{
+    if (agendaCheia()) {
         return 0;
     }
-    a->itens[a->quantidade] = op;   /* coloca no fim...           */
-    a->quantidade++;
-    /* ...e reordena. Parâmetros: vetor, quantos itens, tamanho de cada
-     * item em bytes (sizeof) e a função que compara dois itens. */
-    qsort(a->itens, a->quantidade, sizeof(Operacao), compararAgendados);
+    banco.agendados.itens[banco.agendados.quantidade] = op;
+    banco.agendados.quantidade++;
+
+    /* Inserção: leva o último item até sua posição, por data e número. */
+    ordenarAgenda();
     return 1;
 }
 
-/* Remove o item da posição "pos" puxando os seguintes uma casa para trás,
- * para o vetor continuar sem buracos e ordenado. */
-void removerPosicao(Agenda *a, int pos)
+void removerPosicao(int pos)
 {
     int i;
-    for (i = pos; i < a->quantidade - 1; i++) {
-        a->itens[i] = a->itens[i + 1];
+    for (i = pos; i < banco.agendados.quantidade - 1; i++) {
+        banco.agendados.itens[i] = banco.agendados.itens[i + 1];
     }
-    a->quantidade--;
+    banco.agendados.quantidade--;
 }
 
-int cancelarAgendado(Agenda *a, int numero, Operacao *cancelado)
+Operacao cancelarAgendado(int numero)
 {
+    Operacao cancelado = {0};
     int i;
-    for (i = 0; i < a->quantidade; i++) {
-        if (a->itens[i].numero == numero) {
-            *cancelado = a->itens[i];
-            removerPosicao(a, i);
-            return 1;
+    for (i = 0; i < banco.agendados.quantidade; i++) {
+        if (banco.agendados.itens[i].numero == numero) {
+            cancelado = banco.agendados.itens[i];
+            removerPosicao(i);
+            return cancelado;
         }
     }
-    return 0;   /* não está na agenda */
+    return cancelado;
 }
 
-int retirarVencido(Agenda *a, int hoje, Operacao *saida)
+Operacao retirarVencido(int hoje)
 {
-    /* Como o vetor está ordenado, basta olhar o primeiro (posição 0). */
-    if (agendaVazia(a) || a->itens[0].data > hoje) {
-        return 0;
-    }
-    *saida = a->itens[0];
-    removerPosicao(a, 0);
-    return 1;
+    Operacao saida = {0};
+    if (agendaVazia() || banco.agendados.itens[0].data > hoje) return saida;
+    saida = banco.agendados.itens[0];
+    removerPosicao(0);
+    return saida;
 }
 
-void mostrarAgenda(Agenda *a)
+void mostrarAgenda(void)
 {
     int i;
-    if (agendaVazia(a)) {
+    if (agendaVazia()) {
         printf("   (nenhum pagamento agendado)\n");
         return;
     }
-    for (i = 0; i < a->quantidade; i++) {
+    for (i = 0; i < banco.agendados.quantidade; i++) {
         printf("   ");
-        imprimirOperacao(a->itens[i]);
+        imprimirOperacao(banco.agendados.itens[i]);
     }
 }

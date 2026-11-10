@@ -12,10 +12,10 @@
 
 #define DATA_INICIAL 20261105   /* 05/11/2026 */
 
-void mostrarMenu(Sistema *s)
+void mostrarMenu(void)
 {
     printf("\n========== BANCO EP  |  hoje: ");
-    imprimirData(s->hoje);
+    imprimirData(banco.hoje);
     printf(" ==========\n");
     printf(" Pedidos imediatos (entram na FILA)\n");
     printf("   1 - Depósito\n");
@@ -38,85 +38,99 @@ void mostrarMenu(Sistema *s)
 
 int main(void)
 {
-    Sistema banco;
     int opcao, origem, destino, conta, data;
     double valor;
 
     configurarConsole();
-    iniciarSistema(&banco, DATA_INICIAL);
+    iniciarSistema(DATA_INICIAL);
 
     printf("Bem-vindo ao Banco EP. Contas de demonstração:\n");
-    mostrarContas(&banco);
+    mostrarContas();
 
     do {
-        mostrarMenu(&banco);
-        opcao = lerInteiro("Opção: ");
+        mostrarMenu();
+        printf("Opção: ");
+        opcao = lerInteiro();
 
         switch (opcao) {
             case 1:
-                destino = lerInteiro("Conta que recebe o depósito: ");
-                valor   = lerValor("Valor: R$ ");
-                solicitarOperacao(&banco, TIPO_DEPOSITO, SEM_CONTA, destino, valor);
+                printf("Conta que recebe o depósito: ");
+                destino = lerInteiro();
+                printf("Valor: R$ ");
+                valor = lerValor();
+                solicitarOperacao(TIPO_DEPOSITO, SEM_CONTA, destino, valor);
                 break;
 
             case 2:
-                origem = lerInteiro("Conta do saque: ");
-                valor  = lerValor("Valor: R$ ");
-                solicitarOperacao(&banco, TIPO_SAQUE, origem, SEM_CONTA, valor);
+                printf("Conta do saque: ");
+                origem = lerInteiro();
+                printf("Valor: R$ ");
+                valor = lerValor();
+                solicitarOperacao(TIPO_SAQUE, origem, SEM_CONTA, valor);
                 break;
 
             case 3:
-                origem  = lerInteiro("Conta de origem: ");
-                destino = lerInteiro("Conta de destino: ");
-                valor   = lerValor("Valor: R$ ");
-                solicitarOperacao(&banco, TIPO_TRANSFERENCIA, origem, destino, valor);
+                printf("Conta de origem: ");
+                origem = lerInteiro();
+                printf("Conta de destino: ");
+                destino = lerInteiro();
+                printf("Valor: R$ ");
+                valor = lerValor();
+                solicitarOperacao(TIPO_TRANSFERENCIA, origem, destino, valor);
                 break;
 
             case 4:
-                origem = lerInteiro("Conta que paga: ");
-                valor  = lerValor("Valor: R$ ");
-                solicitarOperacao(&banco, TIPO_PAGAMENTO, origem, SEM_CONTA, valor);
+                printf("Conta que paga: ");
+                origem = lerInteiro();
+                printf("Valor: R$ ");
+                valor = lerValor();
+                solicitarOperacao(TIPO_PAGAMENTO, origem, SEM_CONTA, valor);
                 break;
 
             case 5:
-                processarProximo(&banco);
+                processarProximo();
                 break;
 
             case 6:
-                processarTodos(&banco);
+                processarTodos();
                 break;
 
             case 7:
-                estornar(&banco);
+                estornar();
                 break;
 
             case 8:
-                conta = lerInteiro("Conta que paga: ");
-                valor = lerValor("Valor: R$ ");
-                data  = lerData("Data do pagamento (DD/MM/AAAA): ");
-                agendarPagamento(&banco, conta, valor, data);
+                printf("Conta que paga: ");
+                conta = lerInteiro();
+                printf("Valor: R$ ");
+                valor = lerValor();
+                printf("Data do pagamento (DD/MM/AAAA): ");
+                data = lerData();
+                agendarPagamento(conta, valor, data);
                 break;
 
             case 9:
                 printf("  Agenda atual:\n");
-                mostrarAgenda(&banco.agendados);
-                cancelarAgendamento(&banco,
-                                    lerInteiro("Número do pagamento a cancelar: "));
+                mostrarAgenda();
+                printf("Número do pagamento a cancelar: ");
+                cancelarAgendamento(lerInteiro());
                 break;
 
             case 10:
-                data = lerData("Nova data (DD/MM/AAAA): ");
-                avancarData(&banco, data);
+                printf("Nova data (DD/MM/AAAA): ");
+                data = lerData();
+                avancarData(data);
                 break;
 
             case 11:
-                mostrarSituacao(&banco);
+                mostrarSituacao();
                 break;
 
             case 12:
-                conta = lerInteiro("Conta (0 = todas): ");
+                printf("Conta (0 = todas): ");
+                conta = lerInteiro();
                 printf("\n  HISTÓRICO\n");
-                mostrarHistorico(&banco.historico, conta);
+                mostrarHistorico(conta);
                 break;
 
             case 0:
@@ -128,6 +142,6 @@ int main(void)
         }
     } while (opcao != 0);
 
-    encerrarSistema(&banco);   /* devolve a memória do histórico (free) */
+    encerrarSistema();   /* zera o contador do histórico */
     return 0;
 }

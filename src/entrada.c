@@ -1,23 +1,10 @@
-/*
- * entrada.c
- * ---------
- * Leitura do teclado (ver entrada.h).
- *
- * Por que não usar só scanf("%d", ...)? Se a pessoa digita "abc", o scanf
- * falha e deixa "abc" parado na entrada, e o programa entra em laço.
- * Aqui lemos a LINHA inteira com fgets e depois interpretamos com sscanf
- * (o mesmo que scanf, mas lendo de um texto em vez do teclado).
- */
-
-/* Pede ao compilador as funções isatty/fileno também no Linux. */
+/* Entrada por caracteres e índices: sem variáveis de endereço nem scanf. */
 #define _POSIX_C_SOURCE 200809L
-
 #include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <limits.h>
 #include "entrada.h"
-
-/* Partes específicas de cada sistema operacional. "#ifdef _WIN32" faz o
- * compilador usar o primeiro bloco só no Windows. */
 #ifdef _WIN32
 #include <windows.h>
 #include <io.h>
@@ -28,103 +15,121 @@
 #endif
 
 #define TAM_LINHA 100
+static char linha[TAM_LINHA];
+static int posicao, leituraValida;
 
 void configurarConsole(void)
 {
 #ifdef _WIN32
-    SetConsoleOutputCP(65001);   /* 65001 = UTF-8, a codificação dos acentos */
+    SetConsoleOutputCP(65001);
 #endif
 }
 
-/* Lê uma linha. Devolve 1 se leu, 0 se a entrada acabou (fim do arquivo). */
-int lerLinha(char linha[], int tamanho)
+/* Consome a linha inteira, mesmo se ela exceder o espaço disponível. */
+static int lerLinha(void)
 {
-    if (fgets(linha, tamanho, stdin) == NULL) {
-        return 0;
+    int c, tamanho = 0, longa = 0;
+    while ((c = getchar()) != EOF && c != '\n') {
+        if (c == '\r') continue;
+        if (tamanho < TAM_LINHA - 1) linha[tamanho++] = (char)c;
+        else longa = 1;
     }
-    linha[strcspn(linha, "\r\n")] = '\0';   /* corta o ENTER do final */
-
-    /* Na demonstração automática (banco.exe < demo\entrada.txt) a
-     * entrada vem de um arquivo e não aparece na tela; então a mostramos. */
-    if (!isatty(fileno(stdin))) {
-        printf("%s\n", linha);
-    }
+    linha[tamanho] = '\0';
+    if (c == EOF && tamanho == 0 && !longa) return 0;
+    if (!isatty(fileno(stdin))) printf("%s\n", linha);
+    posicao = 0;
+    leituraValida = !longa;
     return 1;
 }
 
-int lerInteiro(const char *pergunta)
+static void pularEspacos(void)
 {
-    char linha[TAM_LINHA];
+    while (isspace((unsigned char)linha[posicao])) posicao++;
+}
+
+/* Lê um inteiro do texto global e avança o índice até o próximo caractere. */
+static int numeroInteiro(void)
+{
+    long long numero = 0, limite;
+    int sinal = 1, digitos = 0;
+    pularEspacos();
+    if (linha[posicao] == '-' || linha[posicao] == '+') {
+        if (linha[posicao] == '-') sinal = -1;
+        posicao++;
+    }
+    limite = sinal < 0 ? -(long long)INT_MIN : INT_MAX;
+    while (isdigit((unsigned char)linha[posicao])) {
+        int digito = linha[posicao++] - '0';
+        if (numero > (limite - digito) / 10) leituraValida = 0;
+        else numero = numero * 10 + digito;
+        digitos++;
+    }
+    if (!digitos) leituraValida = 0;
+    return leituraValida ? (int)(sinal * numero) : 0;
+}
+
+int lerInteiro(void)
+{
     int numero;
-    char sobra;
-
-    while (1) {
-        printf("%s", pergunta);
-        if (!lerLinha(linha, TAM_LINHA)) {
-            return 0;
-        }
-        /* sscanf devolve quantos itens conseguiu ler. Esperamos exatamente
-         * 1: o número. Se ler também "sobra", havia lixo depois dele. */
-        if (sscanf(linha, "%d %c", &numero, &sobra) == 1) {
-            return numero;
-        }
-        printf("  Digite um número inteiro.\n");
+    while (lerLinha()) {
+        numero = numeroInteiro();
+        pularEspacos();
+        if (leituraValida && linha[posicao] == '\0') return numero;
+        printf("  Digite um número inteiro. Tente novamente: ");
     }
+    return 0;
 }
 
-double lerValor(const char *pergunta)
+double lerValor(void)
 {
-    char linha[TAM_LINHA];
-    double valor;
-    char sobra;
-    char *virgula;
-
-    while (1) {
-        printf("%s", pergunta);
-        if (!lerLinha(linha, TAM_LINHA)) {
-            return 0;
+    int digitos, expoente, i;
+    while (lerLinha()) {
+        for (i = 0; linha[i]; i++) if (linha[i] == ',') linha[i] = '.';
+        pularEspacos();
+        if (linha[posicao] == '+' || linha[posicao] == '-') posicao++;
+        digitos = 0;
+        while (isdigit((unsigned char)linha[posicao])) { posicao++; digitos++; }
+        if (linha[posicao] == '.') {
+            posicao++;
+            while (isdigit((unsigned char)linha[posicao])) { posicao++; digitos++; }
         }
-        virgula = strchr(linha, ',');   /* procura uma vírgula no texto */
-        if (virgula != NULL) {
-            *virgula = '.';             /* 150,50 -> 150.50 */
+        if (!digitos) leituraValida = 0;
+        if (linha[posicao] == 'e' || linha[posicao] == 'E') {
+            posicao++;
+            if (linha[posicao] == '+' || linha[posicao] == '-') posicao++;
+            expoente = 0;
+            while (isdigit((unsigned char)linha[posicao])) { posicao++; expoente++; }
+            if (!expoente) leituraValida = 0;
         }
-        if (sscanf(linha, "%lf %c", &valor, &sobra) == 1) {
-            return valor;
-        }
-        printf("  Digite um valor, por exemplo 150,50.\n");
+        pularEspacos();
+        if (leituraValida && linha[posicao] == '\0') return atof(linha);
+        printf("  Digite um valor, por exemplo 150,50. Tente novamente: ");
     }
+    return 0;
 }
 
-/* Confere se dia/mês/ano formam uma data que existe. */
 int dataExiste(int dia, int mes, int ano)
 {
     int diasNoMes[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-
-    if (ano < 1900 || ano > 2999 || mes < 1 || mes > 12 || dia < 1) {
-        return 0;
-    }
-    /* Ano bissexto: divisível por 4, exceto os de século que não são por 400. */
-    if (mes == 2 && ((ano % 4 == 0 && ano % 100 != 0) || ano % 400 == 0)) {
-        return dia <= 29;
-    }
+    if (ano < 1900 || ano > 2999 || mes < 1 || mes > 12 || dia < 1) return 0;
+    if (mes == 2 && ((ano % 4 == 0 && ano % 100 != 0) || ano % 400 == 0)) return dia <= 29;
     return dia <= diasNoMes[mes - 1];
 }
 
-int lerData(const char *pergunta)
+int lerData(void)
 {
-    char linha[TAM_LINHA];
     int dia, mes, ano;
-    char sobra;
-
-    while (1) {
-        printf("%s", pergunta);
-        if (!lerLinha(linha, TAM_LINHA)) {
-            return 0;
-        }
-        if (sscanf(linha, "%d/%d/%d %c", &dia, &mes, &ano, &sobra) == 3 &&
-            dataExiste(dia, mes, ano)) {
-            return ano * 10000 + mes * 100 + dia;   /* vira AAAAMMDD */
-        }
-        printf("  Data inválida. Use DD/MM/AAAA, por exemplo 10/11/2026.\n");
+    while (lerLinha()) {
+        dia = numeroInteiro();
+        if (linha[posicao] != '/') leituraValida = 0;
+        else posicao++;
+        mes = numeroInteiro();
+        if (linha[posicao] != '/') leituraValida = 0;
+        else posicao++;
+        ano = numeroInteiro();
+        pularEspacos();
+        if (leituraValida && linha[posicao] == '\0' && dataExiste(dia, mes, ano)) return ano * 10000 + mes * 100 + dia;
+        printf("  Data inválida. Use DD/MM/AAAA. Tente novamente: ");
     }
+    return 0;
 }

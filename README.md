@@ -1,6 +1,6 @@
 # EP Pilhas e Filas: processamento de transações bancárias em C
 
-Projeto acadêmico de Algoritmos que demonstra **filas, pilhas, ordenação e listas encadeadas**
+Projeto acadêmico de Algoritmos que demonstra **filas, pilhas, ordenação e vetores**
 por meio de um sistema bancário em C. Clientes pedem depósito, saque, transferência e pagamento
 (imediato ou agendado) e podem estornar a última operação efetivada.
 
@@ -24,8 +24,21 @@ e são registrados no histórico ao executar. **Agendados não entram na pilha d
 |---|---|---|
 | **Fila (FIFO)** | pedidos imediatos (`src/fila.c`) | quem pediu primeiro é atendido primeiro. A ordem decide quem fica sem saldo quando dois pedidos disputam o mesmo dinheiro |
 | **Pilha (LIFO)** | operações imediatas efetivadas (`src/pilha.c`) | o estorno tenta desfazer a **última** empilhada; se o dinheiro necessário já foi usado, o estorno é recusado |
-| **Vetor + `qsort`** | pagamentos agendados (`src/agendados.c`) | ordenados por data. Como o `qsort` não é estável, o **número de entrada** desempata datas iguais (mantém FIFO) |
-| **Lista encadeada** | histórico (`src/historico.c`) | cresce sem limite fixo; cada registro é criado com `malloc` e liberado com `free` |
+| **Vetor + ordenação por inserção** | pagamentos agendados (`src/agendados.c`) | ordenados por data; o **número de entrada** desempata datas iguais (mantém FIFO) |
+| **Vetor de registros** | histórico (`src/historico.c`) | cada evento ocupa a próxima posição livre; capacidade de 1.000 registros |
+
+### Implementação sem ponteiros explícitos
+
+As funções acessam um único `Sistema banco` global, com vetores e índices. Não há declarações
+de ponteiros, uso de `->`, passagem de endereços com `&`, alocação dinâmica ou `qsort` nos fontes
+do trabalho. As funções que removem operações devolvem uma `Operacao` por valor;
+`numero == 0` indica que não havia operação disponível. A busca de conta devolve seu índice,
+ou `-1` quando ela não existe.
+
+Essa organização atende à versão didática com um banco por execução. Textos continuam sendo
+vetores de caracteres; as bibliotecas padrão de C recebem esses vetores conforme suas APIs.
+Quando o histórico fica cheio, comandos que precisam registrar eventos são recusados antes
+de alterar saldos, fila, pilha ou agenda. O avanço da data exige espaço para todos os vencidos.
 
 ## Compilar
 
@@ -70,7 +83,7 @@ O programa começa em **05/11/2026** com três contas: **1 Ana (R$ 500)**, **2 B
 | 10 | Avança a data simulada e executa os agendados vencidos, em ordem |
 | 11 | Mostra contas, fila, pilha e agenda |
 | 12 | Histórico (de todas as contas ou de uma) |
-| 0 | Sai (libera a memória do histórico) |
+| 0 | Sai (zera o contador do histórico) |
 
 Valores aceitam `150`, `150.50` ou `150,50`. Entradas inválidas repetem a pergunta.
 
@@ -88,8 +101,8 @@ pois restarão R$ 10. Use a opção **7** para estornar o saque efetivado e devo
 ## Simulador animado (site)
 
 `slides/simulador.html` mostra as estruturas funcionando passo a passo: a ficha entra na fila,
-sai pelo início, vira a variável `op`, vai para o topo da pilha, a agenda se reordena com o
-`qsort` e cada nó é ligado no fim da lista. Ao lado aparecem a linha de C que está rodando e a
+sai pelo início, vira a variável `op`, vai para o topo da pilha, a agenda se ordena por
+inserção e cada registro ocupa uma posição do vetor do histórico. Ao lado aparecem a linha de C que está rodando e a
 mesma saída que o `banco.exe` imprimiria.
 
 - **Rodar a demonstração**: o mesmo roteiro de `demo/entrada-demo.txt`, animado.
@@ -99,11 +112,11 @@ mesma saída que o `banco.exe` imprimiria.
 
 O motor do simulador (`slides/js/banco.js`) é um espelho em JavaScript de `src/sistema.c`.
 `node testes/teste_simulador.mjs` confere que ele imprime exatamente as mesmas linhas do
-`banco.exe` no roteiro da demonstração e testa os casos extremos (25 verificações).
+`banco.exe` no roteiro da demonstração e testa os casos extremos (32 verificações).
 
 **Vídeo:** [slides/midia/banco-ep.mp4](slides/midia/banco-ep.mp4) mostra a demonstração inteira em capítulos (fila, pilha,
 agenda, histórico). Ele é o próprio simulador em "modo filme" (`slides/simulador.html?filme`,
-que também roda ao vivo no navegador), gravado quadro a quadro: **2min25s, Full HD, 60 fps**.
+que também roda ao vivo no navegador), gravado quadro a quadro: **aproximadamente 2min26s, Full HD, 60 fps**.
 
 ### Abrir o site localmente
 
@@ -136,11 +149,16 @@ Se o Chrome não for encontrado, defina a variável de ambiente `CHROME` com o c
 
 | Conjunto | Como executar | Cobertura |
 |---|---|---|
-| C | `make testes` ou `.\testar.bat` após compilar | 62 verificações em quatro programas: estruturas, validações, saldo, estorno e agenda |
-| JavaScript | `node testes/teste_simulador.mjs` | 25 verificações: roteiro, casos extremos, fila circular e passos da animação |
+| C | `make testes` ou `.\testar.bat` após compilar | 72 verificações em quatro programas: estruturas, validações, saldo, estorno, agenda e histórico cheio |
+| JavaScript | `node testes/teste_simulador.mjs` | 32 verificações: roteiro, casos extremos, fila circular, histórico cheio e passos da animação |
+| Terminal | `node testes/teste_terminal.mjs` após compilar | 12 verificações: execução real da demonstração, entradas inválidas e ausência de ponteiros explícitos nos fontes |
 
 O teste JavaScript usa Node.js e não precisa instalar dependências. Ele compara **19 linhas**
 do roteiro com a saída de referência do programa em C, além de conferir saldos e estruturas finais.
+
+Após editar os fontes C, execute `node ferramentas/sincronizar-codigo.mjs` para atualizar os
+trechos exibidos no painel do simulador. Para verificar a interface em desktop e celular,
+inicie o servidor local e execute `npm run verificar` na pasta `ferramentas` após `npm ci`.
 
 ## Casos extremos tratados
 
@@ -149,12 +167,13 @@ do roteiro com a saída de referência do programa em C, além de conferir saldo
 | Estorno sem nada efetivado (pilha vazia) | "Nada a estornar." | `teste_pilha`, `teste_sistema` §1 |
 | Saldo insuficiente | pedido recusado e registrado no histórico; saldo não muda | `teste_sistema` §3 |
 | Dois pedidos disputando o saldo | o primeiro da fila leva; o segundo é recusado | `teste_sistema` §3 |
-| Agendados com a mesma data | executam na ordem de entrada (desempate do `qsort`) | `teste_agendados`, `teste_sistema` §5 |
+| Agendados com a mesma data | executam na ordem de entrada (data, depois número) | `teste_agendados`, `teste_sistema` §5 |
 | Agendado para hoje ou para o passado | recusado (use pagamento imediato) | `teste_sistema` §5 |
 | Cancelar agendado já executado | "não há pagamento agendado com esse número" | `teste_sistema` §5 |
 | Estorno quando o dinheiro já foi usado (ex.: um agendado gastou o depósito) | estorno recusado; a operação volta ao topo e nada muda | `teste_sistema` §6 |
 | Conta inexistente (inclusive conta 0), valor ≤ 0, acima de R$ 1.000.000 ou `nan`, transferência para a mesma conta | recusado antes de entrar na fila | `teste_sistema` §2 |
 | Fila / pilha / agenda cheias | mensagem de limite; nada é perdido | `teste_fila`, `teste_pilha` |
+| Histórico cheio | comandos que precisam de registro são recusados antes de alterar o banco | `teste_sistema` §8, `teste_simulador.mjs` §6 |
 
 ## Arquivos
 
@@ -163,10 +182,10 @@ do roteiro com a saída de referência do programa em C, além de conferir saldo
 | `src/operacao.h/.c` | struct `Operacao` (a "ficha" de cada operação) e impressão |
 | `src/pilha.h/.c` | pilha LIFO em vetor: `empilhar`, `desempilhar`, `pilhaVazia` |
 | `src/fila.h/.c` | fila FIFO em vetor circular: `enfileirar`, `desenfileirar`, `filaVazia` |
-| `src/agendados.h/.c` | agenda ordenada com `qsort` e `compararAgendados` (data, depois número) |
-| `src/historico.h/.c` | lista encadeada com `malloc`/`free` |
+| `src/agendados.h/.c` | agenda em vetor com ordenação por inserção (data, depois número) |
+| `src/historico.h/.c` | histórico em vetor de 1.000 registros |
 | `src/sistema.h/.c` | contas e regras: caminho de cada operação pelas estruturas |
-| `src/entrada.h/.c` | leitura segura do teclado (`fgets` + `sscanf`) |
+| `src/entrada.h/.c` | leitura por caracteres e validação por índices, sem `scanf` |
 | `src/main.c` | menu |
 | `testes/` | quatro programas de teste em C e o teste do motor JavaScript |
 | `demo/` | roteiro da demonstração e saída esperada |
@@ -175,6 +194,9 @@ do roteiro com a saída de referência do programa em C, além de conferir saldo
 | `slides/simulador.html` | simulador animado (`js/banco.js` = motor, `js/simulador.js` = tela) |
 | `slides/midia/banco-ep.mp4` | vídeo da demonstração (`js/filme.js` = roteiro, `ferramentas/gravar-video.mjs` = gravador) |
 | `testes/teste_simulador.mjs` | confere o motor JS contra a saída real do `banco.exe` |
+| `testes/teste_terminal.mjs` | testa a entrada do programa compilado e confere os fontes |
+| `ferramentas/sincronizar-codigo.mjs` | atualiza o painel do simulador com o código C atual |
+| `ferramentas/verificar-site.mjs` | confere slides e simulador no Chrome em desktop e celular |
 
 ## Processo de desenvolvimento
 

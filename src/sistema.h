@@ -1,20 +1,4 @@
-/*
- * sistema.h
- * ---------
- * Junta tudo: contas, fila de pedidos, pilha de efetivadas, agenda e
- * histórico. Cada função aqui é um "caso de uso" do menu.
- *
- * Caminho de um pedido imediato:
- *   cliente pede -> entra no FIM da FILA -> processar tira do INÍCIO ->
- *   tem saldo?  sim -> efetiva, EMPILHA na pilha de efetivadas, histórico
- *               não -> recusa, histórico
- *   estornar -> DESEMPILHA o topo (a última efetivada) e a desfaz
- *
- * Caminho de um pagamento agendado:
- *   agenda (ordenada por data, qsort com desempate) -> data avança ->
- *   executa os vencidos em ordem -> histórico (NÃO vai para a pilha)
- */
-
+/* Banco em vetores: acesso direto ao estado global, sem parâmetros de endereço. */
 #ifndef SISTEMA_H
 #define SISTEMA_H
 
@@ -26,9 +10,6 @@
 
 #define NUM_CONTAS 3
 
-/* Um texto em C é um vetor de char terminado pelo caractere '\0'.
- * "char titular[20]" guarda até 19 caracteres + o '\0' final
- * (letras acentuadas ocupam 2 caracteres cada). */
 typedef struct {
     int    numero;
     char   titular[20];
@@ -37,15 +18,17 @@ typedef struct {
 
 typedef struct {
     Conta     contas[NUM_CONTAS];
-    Fila      pedidos;       /* FIFO: pedidos imediatos esperando        */
-    Pilha     efetivadas;    /* LIFO: operações efetivadas, p/ estorno    */
-    Agenda    agendados;     /* pagamentos futuros, ordenados por data    */
-    Historico historico;     /* lista encadeada com todos os eventos      */
-    int       hoje;          /* data simulada, AAAAMMDD                   */
-    int       proximoNumero; /* número de entrada do próximo pedido       */
+    Fila      pedidos;
+    Pilha     efetivadas;
+    Agenda    agendados;
+    Historico historico;
+    int       hoje;
+    int       proximoNumero;
 } Sistema;
 
-/* Códigos de resultado devolvidos pelas funções abaixo. */
+/* Único estado do programa; as funções acessam seus campos pelo ponto. */
+extern Sistema banco;
+
 #define RES_OK                  0
 #define RES_VALOR_INVALIDO      1
 #define RES_CONTA_INVALIDA      2
@@ -59,36 +42,29 @@ typedef struct {
 #define RES_DATA_INVALIDA      10
 #define RES_AGENDA_CHEIA       11
 #define RES_NAO_ENCONTRADO     12
+#define RES_HISTORICO_CHEIO    13
 
-/* Prepara contas de exemplo, estruturas vazias e a data inicial. */
-void  iniciarSistema(Sistema *s, int dataInicial);
+void  iniciarSistema(int dataInicial);
 
-/* Libera a memória do histórico. Chamar antes de sair. */
-void  encerrarSistema(Sistema *s);
+void  encerrarSistema(void);
 
-/* Devolve o ENDEREÇO da conta com esse número, ou NULL se não existe. */
-Conta *buscarConta(Sistema *s, int numero);
+/* Devolve o índice da conta, ou -1 quando ela não existe. */
+int buscarConta(int numero);
 
-/* Pedido imediato: valida e coloca no fim da fila (o saldo só é
- * conferido ao processar, pois ele pode mudar até lá). */
-int solicitarOperacao(Sistema *s, int tipo, int origem, int destino, double valor);
+int solicitarOperacao(int tipo, int origem, int destino, double valor);
 
-/* Atende o primeiro da fila. */
-int processarProximo(Sistema *s);
+int processarProximo(void);
 
-/* Atende a fila inteira, em ordem. Devolve quantos foram atendidos. */
-int processarTodos(Sistema *s);
+int processarTodos(void);
 
-/* Desfaz a última operação efetivada (topo da pilha). */
-int estornar(Sistema *s);
+int estornar(void);
 
-int agendarPagamento(Sistema *s, int conta, double valor, int data);
-int cancelarAgendamento(Sistema *s, int numero);
+int agendarPagamento(int conta, double valor, int data);
+int cancelarAgendamento(int numero);
 
-/* Muda a data simulada e executa os agendados que venceram. */
-int avancarData(Sistema *s, int novaData);
+int avancarData(int novaData);
 
-void mostrarContas(Sistema *s);
-void mostrarSituacao(Sistema *s);
+void mostrarContas(void);
+void mostrarSituacao(void);
 
 #endif

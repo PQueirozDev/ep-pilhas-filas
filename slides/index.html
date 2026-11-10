@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EP Pilhas e Filas: transações bancárias em C</title>
-<meta name="description" content="Slides do EP de Algoritmos (Senac, 2026): sistema bancário em C com fila FIFO, pilha LIFO, agenda ordenada com qsort e histórico em lista encadeada.">
+<meta name="description" content="Slides do EP de Algoritmos (Senac, 2026): sistema bancário em C com fila FIFO, pilha LIFO, agenda ordenada por inserção e histórico em vetor.">
 <meta name="robots" content="noindex">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23181818'/%3E%3Crect x='8' y='8' width='16' height='4' rx='1' fill='%23F5B971'/%3E%3Crect x='8' y='14' width='16' height='4' rx='1' fill='%23F5B971' opacity='.6'/%3E%3Crect x='8' y='20' width='16' height='4' rx='1' fill='%23F5B971' opacity='.3'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -111,7 +111,6 @@
   .cena-lista { height: 112px; } .cena-lista .item { font-size: 12px; line-height: 16px; }
   .cena-lista .item.no-lista { border-color: rgba(139,211,160,.5); }
   .cena-lista .item.nulo { background: transparent; border-color: transparent; color: var(--muted); }
-  .cena-lista .item:not(.nulo)::after { content: "→"; position: absolute; right: -20px; top: 8px; color: var(--muted); }
   .cena .pausa {
     position: absolute; right: 8px; bottom: 8px; z-index: 2; width: 32px; height: 32px; border-radius: 8px;
     display: grid; place-items: center; cursor: pointer; font-size: 16px;
@@ -219,12 +218,12 @@
     <span class="seta">→</span>
     <div class="no" style="--cor:var(--lifo)"><b>PILHA</b><small>efetivadas, para estorno</small></div>
     <span class="seta">→</span>
-    <div class="no" style="--cor:var(--lista)"><b>HISTÓRICO</b><small>lista encadeada</small></div>
+    <div class="no" style="--cor:var(--lista)"><b>HISTÓRICO</b><small>vetor de registros</small></div>
   </div>
   <div class="fluxo" data-fluxo>
     <div class="no"><b>Cliente agenda</b><small>pagamento com data futura</small></div>
     <span class="seta">→</span>
-    <div class="no" style="--cor:var(--agenda)"><b>AGENDA</b><small>ordenada com qsort</small></div>
+    <div class="no" style="--cor:var(--agenda)"><b>AGENDA</b><small>ordenada por inserção</small></div>
     <span class="seta">→</span>
     <div class="no"><b>Data chega</b><small>executa os vencidos</small></div>
     <span class="seta">→</span>
@@ -261,16 +260,15 @@
       <p class="muted">Carla tem R$ 50 e pede dois saques. O primeiro da fila leva o dinheiro e o segundo é recusado. Se a ordem fosse outra, o resultado seria outro. Por isso a fila não é decorativa.</p>
       <div class="cena cena-fila" data-cena="fila" aria-label="Animação: pedidos entrando e saindo da fila"></div>
     </div>
-<pre><span class="c">/* vetor circular: o fim "dá a volta" */</span>
-fim = (f->inicio + f->quantidade)
-      % CAPACIDADE_FILA;
-f->itens[fim] = op;
-f->quantidade++;
-
-<span class="c">/* desenfileirar: sai o do início */</span>
-*saida = f->itens[f->inicio];
-f->inicio = (f->inicio + <span class="v">1</span>) % CAPACIDADE_FILA;
-f->quantidade--;</pre>
+<pre>Operacao desenfileirar(void)
+{
+    Operacao saida = {0}; /* numero 0 indica que não havia operação. */
+    if (filaVazia()) return saida;
+    saida = banco.pedidos.itens[banco.pedidos.inicio];
+    banco.pedidos.inicio = (banco.pedidos.inicio + 1) % CAPACIDADE_FILA;
+    banco.pedidos.quantidade--;
+    return saida;
+}</pre>
   </div>
 </section>
 
@@ -283,85 +281,79 @@ f->quantidade--;</pre>
       <p class="muted">Cada operação efetivada vai para o topo. Desfazer sempre a mais recente evita desmontar uma operação de que outras ainda dependem. Se o dinheiro já foi usado, o estorno é recusado e a ficha volta ao topo.</p>
       <div class="cena cena-pilha" data-cena="pilha" aria-label="Animação: empilhar e desempilhar"></div>
     </div>
-<pre><span class="k">int</span> <span class="p">desempilhar</span>(Pilha *p, Operacao *saida)
+<pre>Operacao desempilhar(void)
 {
-    <span class="k">if</span> (pilhaVazia(p)) {
-        <span class="k">return</span> <span class="v">0</span>;  <span class="c">/* nada a estornar */</span>
-    }
-    p->quantidade--;
-    *saida = p->itens[p->quantidade];
-    <span class="k">return</span> <span class="v">1</span>;
+    Operacao saida = {0}; /* numero 0 indica que não havia operação. */
+    if (pilhaVazia()) return saida;
+    banco.efetivadas.quantidade--;
+    saida = banco.efetivadas.itens[banco.efetivadas.quantidade];
+    return saida;
 }</pre>
   </div>
 </section>
 
-<!-- 7. Ponteiro -->
-<section class="slide" aria-label="Ponteiros">
-  <p class="rotulo">Conceito novo</p>
+<!-- 7. Estado global -->
+<section class="slide" aria-label="Estado global e retorno por valor">
+  <p class="rotulo">Como as funções trabalham</p>
   <div class="grade g2" style="align-items:center">
     <div>
-      <h2 class="gradiente">Por que <code>Pilha *p</code>?</h2>
-      <p class="muted">Sem ponteiro, a função recebe uma <b style="color:var(--text)">cópia</b> da pilha, e o empilhamento se perde quando a função termina. Com o ponteiro, ela recebe o <b style="color:var(--text)">endereço</b> e altera a pilha verdadeira.</p>
-      <p class="muted" style="margin-top:16px">O mesmo truque serve para "devolver" a operação desempilhada pelo parâmetro <code>saida</code>.</p>
+      <h2 class="gradiente">Acesso direto ao banco, retorno por valor</h2>
+      <p class="muted">Existe um único <code>banco</code> global. As funções acessam seus campos com o ponto, como <code>banco.efetivadas.quantidade</code>.</p>
+      <p class="muted" style="margin-top:16px">Ao remover da fila ou pilha, a função devolve a operação inteira por valor. Uma operação com <code>numero == 0</code> indica que a estrutura estava vazia.</p>
     </div>
-<pre>Pilha efetivadas;
-Operacao desfeita;
+<pre>Operacao desfeita;
 
-iniciarPilha(<span class="p">&amp;</span>efetivadas);   <span class="c">/* &amp; = endereço */</span>
-
-<span class="k">if</span> (desempilhar(<span class="p">&amp;</span>efetivadas, <span class="p">&amp;</span>desfeita)) {
+iniciarPilha();
+desfeita = desempilhar();
+if (desfeita.numero != 0) {
     imprimirOperacao(desfeita);
-} <span class="k">else</span> {
-    printf(<span class="v">"Nada a estornar.\n"</span>);
+} else {
+    printf("Nada a estornar.");
 }</pre>
   </div>
 </section>
 
 <!-- 8. Agenda -->
-<section class="slide" aria-label="Agenda com qsort" data-cor="var(--agenda)">
-  <p class="rotulo" style="color:var(--agenda)">Agenda · qsort</p>
+<section class="slide" aria-label="Agenda por inserção" data-cor="var(--agenda)">
+  <p class="rotulo" style="color:var(--agenda)">Agenda · inserção</p>
   <div class="grade g2" style="align-items:center">
     <div>
-      <h2 class="gradiente">qsort não é estável, então desempatamos</h2>
-      <p class="muted">Com datas iguais, o <code>qsort</code> pode trocar dois pagamentos de lugar. O <b style="color:var(--text)">número de entrada</b> é o segundo critério, o que mantém a ordem de chegada (FIFO) no mesmo dia.</p>
-      <div class="cena cena-agenda" data-cena="agenda" aria-label="Animação: agenda sendo reordenada pelo qsort"></div>
+      <h2 class="gradiente">Ordenamos por data e número de entrada</h2>
+      <p class="muted">A ordenação por inserção desloca os itens até cada pagamento chegar à posição certa. O <b style="color:var(--text)">número de entrada</b> desempata datas iguais e mantém FIFO no mesmo dia.</p>
+      <div class="cena cena-agenda" data-cena="agenda" aria-label="Animação: agenda sendo ordenada por inserção"></div>
     </div>
-<pre><span class="k">int</span> <span class="a">compararAgendados</span>(<span class="k">const void</span> *a,
-                      <span class="k">const void</span> *b)
+<pre>int compararAgendados(Operacao x, Operacao y)
 {
-    <span class="k">const</span> Operacao *x = a, *y = b;
 
-    <span class="c">/* 1º: data mais cedo vem antes */</span>
-    <span class="k">if</span> (x->data &lt; y->data) <span class="k">return</span> -<span class="v">1</span>;
-    <span class="k">if</span> (x->data &gt; y->data) <span class="k">return</span>  <span class="v">1</span>;
+    if (x.data &lt; y.data) return -1;
+    if (x.data &gt; y.data) return 1;
 
-    <span class="c">/* 2º: empate: quem entrou antes */</span>
-    <span class="k">if</span> (x->numero &lt; y->numero) <span class="k">return</span> -<span class="v">1</span>;
-    <span class="k">if</span> (x->numero &gt; y->numero) <span class="k">return</span>  <span class="v">1</span>;
-    <span class="k">return</span> <span class="v">0</span>;
+    if (x.numero &lt; y.numero) return -1;
+    if (x.numero &gt; y.numero) return 1;
+    return 0;
 }</pre>
   </div>
 </section>
 
 <!-- 9. Histórico -->
-<section class="slide" aria-label="Histórico em lista encadeada" data-cor="var(--lista)">
-  <p class="rotulo" style="color:var(--lista)">Histórico · lista encadeada</p>
+<section class="slide" aria-label="Histórico em vetor de registros" data-cor="var(--lista)">
+  <p class="rotulo" style="color:var(--lista)">Histórico · vetor</p>
   <div class="grade g2" style="align-items:center">
     <div>
-      <h2 class="gradiente">Cresce sem limite, nó por nó</h2>
-      <p class="muted">Cada evento (efetivada, recusada, estornada, agendada, cancelada, paga) vira um nó criado com <code>malloc</code>. Guardamos o último nó para inserir no fim sem percorrer a lista. Ao sair, <code>free</code> devolve toda a memória.</p>
-      <div class="cena cena-lista" data-cena="lista" aria-label="Animação: nós sendo ligados e liberados"></div>
+      <h2 class="gradiente">Um evento em cada posição do vetor</h2>
+      <p class="muted">Cada evento ocupa <code>itens[quantidade]</code>. Depois, o contador aumenta. O vetor guarda até 1.000 registros; se não houver espaço, o sistema recusa o comando antes de alterar o banco.</p>
+      <div class="cena cena-lista" data-cena="lista" aria-label="Animação: registros ocupando posições do vetor"></div>
     </div>
-<pre>NoHistorico *novo = malloc(<span class="k">sizeof</span>(NoHistorico));
-<span class="k">if</span> (novo == NULL) <span class="k">return</span> <span class="v">0</span>;
-novo->op = op;
-novo->proximo = NULL;
-
-<span class="k">if</span> (h->inicio == NULL)
-    h->inicio = novo;        <span class="c">/* 1º nó        */</span>
-<span class="k">else</span>
-    h->fim->proximo = novo;  <span class="c">/* liga no fim  */</span>
-h->fim = novo;</pre>
+<pre>int registrarHistorico(Operacao op, int situacao, int data)
+{
+    int pos = banco.historico.quantidade;
+    if (!historicoTemEspaco(1)) return 0;
+    banco.historico.itens[pos].op = op;
+    banco.historico.itens[pos].situacao = situacao;
+    banco.historico.itens[pos].data = data;
+    banco.historico.quantidade++;
+    return 1;
+}</pre>
   </div>
 </section>
 
@@ -373,7 +365,7 @@ h->fim = novo;</pre>
     <tr><th>Situação</th><th>Resposta do sistema</th></tr>
     <tr><td>Estornar sem nada efetivado</td><td><code>Nada a estornar.</code></td></tr>
     <tr><td>Saldo insuficiente</td><td>Pedido recusado e registrado no histórico, sem mudar o saldo</td></tr>
-    <tr><td>Dois pagamentos agendados no mesmo dia</td><td>Executam na ordem de entrada (desempate do qsort)</td></tr>
+    <tr><td>Dois pagamentos agendados no mesmo dia</td><td>Executam na ordem de entrada (desempate pelo número)</td></tr>
     <tr><td>Estornar depósito cujo dinheiro já foi gasto</td><td>Estorno recusado. A operação volta ao topo e nada muda</td></tr>
     <tr><td>Cancelar agendado já executado</td><td>"Não há pagamento agendado com esse número"</td></tr>
     <tr><td>Conta 0 ou inexistente, valor ≤ 0, <code>nan</code>, mesma conta</td><td>Recusado antes de entrar na fila</td></tr>
@@ -423,12 +415,12 @@ h->fim = novo;</pre>
 <!-- 12. Testes e organização -->
 <section class="slide" aria-label="Testes e organização" data-cor="var(--lista)">
   <p class="rotulo">Qualidade</p>
-  <h2 class="gradiente">62 verificações automáticas em 4 programas de teste</h2>
+  <h2 class="gradiente">72 verificações automáticas em 4 programas de teste</h2>
   <div class="grade g4">
     <div class="cartao"><h3>teste_pilha</h3><p>Pilha vazia, ordem LIFO 3, 2, 1, pilha cheia.</p></div>
     <div class="cartao"><h3>teste_fila</h3><p>Ordem FIFO, fila cheia, vetor circular dando a volta.</p></div>
     <div class="cartao"><h3>teste_agendados</h3><p>Datas iguais, cancelamento, só executa o que venceu.</p></div>
-    <div class="cartao"><h3>teste_sistema</h3><p>Saldo insuficiente, estorno impossível, validações, histórico, free.</p></div>
+    <div class="cartao"><h3>teste_sistema</h3><p>Saldo insuficiente, estorno impossível, validações e histórico cheio.</p></div>
   </div>
   <p class="muted" style="margin-top:32px">Um módulo por estrutura: <span class="mono">pilha · fila · agendados · historico · sistema · entrada · main</span>. Compila sem avisos com <span class="mono">gcc -Wall -Wextra -std=c99</span>. O simulador web usa um motor em JavaScript conferido contra a saída real do <span class="mono">banco.exe</span>.</p>
 </section>
@@ -438,10 +430,10 @@ h->fim = novo;</pre>
   <p class="rotulo">Processo</p>
   <h2 class="gradiente">Como usamos IA no projeto</h2>
   <ul class="lista" style="max-width:820px">
-    <li>As decisões de estrutura (fila, pilha, qsort com desempate, lista) foram da equipe. A IA implementou em incrementos pequenos.</li>
+    <li>As decisões de estrutura (fila, pilha, agenda ordenada e histórico em vetor) foram da equipe. A IA implementou em incrementos pequenos.</li>
     <li>Cada iteração está no <span class="mono">processo-ia.md</span>: pedido, solução, alteração, motivo e resultado.</li>
     <li>Uma segunda IA (Codex) revisou o código e achou um bug real: digitar a conta 0 como origem de uma transferência criava dinheiro. Ele foi corrigido e ganhou teste.</li>
-    <li>O código é comentado para iniciantes: struct, ponteiro e malloc/free são explicados onde aparecem pela primeira vez.</li>
+    <li>O código é comentado para iniciantes: struct, vetores, índices e retorno por valor são explicados ao longo do projeto.</li>
   </ul>
 </section>
 

@@ -2,7 +2,7 @@
  * slides.js
  * ---------
  * Navegação dos slides e mini animações ("cenas") de fila, pilha, agenda e
- * lista encadeada. Cada cena é um roteiro de passos; cada passo muda a lista
+ * histórico em vetor. Cada cena é um roteiro de passos; cada passo muda a lista
  * de itens e a cena reposiciona tudo com transform (a transição fica no CSS).
  */
 (function () {
@@ -152,7 +152,7 @@
       roteiro: [
         s => { s.add({ id: 4, data: 10, texto: '#4 · 10/11 · R$ 100' }); s.legenda('#4 entra no fim do vetor'); },
         s => { s.add({ id: 5, data: 8, texto: '#5 · 08/11 · R$ 50' }); s.legenda('#5 entra no fim, fora de ordem'); },
-        s => { ordenar(s); s.marcar([5], 'foco'); s.legenda('qsort: 08/11 vem antes de 10/11'); },
+        s => { ordenar(s); s.marcar([5], 'foco'); s.legenda('inserção: 08/11 vem antes de 10/11'); },
         s => { s.marcar([5], ''); s.add({ id: 6, data: 10, texto: '#6 · 10/11 · R$ 30' }); s.legenda('#6 também é para 10/11'); },
         s => { ordenar(s); s.marcar([4, 6], 'foco'); s.legenda('Empate na data: #4 entrou antes, fica na frente'); },
         s => { s.marcar([4, 6], ''); s.add({ id: 7, data: 12, texto: '#7 · 12/11 · R$ 20' }); s.legenda('#7 é a data mais distante'); },
@@ -163,24 +163,24 @@
       ]
     },
     lista: {
-      fixos: [{ texto: 'h->inicio', estilo: { left: '16px', top: '42px' } }],
-      inicial: () => [{ id: 'nulo', texto: 'NULL', classe: 'nulo' }],
+      fixos: [{ texto: 'itens[]', estilo: { left: '16px', top: '42px' } }],
+      inicial: () => [{ id: 'livre', texto: 'livre', classe: 'nulo' }],
       posicao: (i, w) => xy(104 + i * larguraNo(w), 32),
       entrada: (i, w) => xy(104 + i * larguraNo(w), 48),
       saida: (i, w) => xy(104 + i * larguraNo(w), 16),
       roteiro: [
-        s => { inserir(s, { id: 1, texto: 'EFETIVADA #1', classe: 'no-lista' }); s.legenda('malloc cria o 1º nó; inicio aponta para ele'); },
-        s => { inserir(s, { id: 2, texto: 'RECUSADA #2', classe: 'no-lista' }); s.legenda('O antigo último passa a apontar para o novo'); },
-        s => { inserir(s, { id: 3, texto: 'ESTORNADA #3', classe: 'no-lista' }); s.legenda('Sem limite fixo: cresce nó por nó'); },
-        s => { s.legenda('Ao sair do programa: free em cada nó'); },
-        s => { s.tirarPrimeiro(); },
-        s => { s.tirarPrimeiro(); },
-        s => { s.tirarPrimeiro(); s.legenda('Memória devolvida: inicio = NULL'); }
+        s => { inserir(s, { id: 1, texto: '[0] EFETIVADA #1', classe: 'no-lista' }); s.legenda('itens[0] recebe o primeiro evento; quantidade = 1'); },
+        s => { inserir(s, { id: 2, texto: '[1] RECUSADA #2', classe: 'no-lista' }); s.legenda('itens[1] recebe o segundo evento; quantidade = 2'); },
+        s => { inserir(s, { id: 3, texto: '[2] ESTORNADA #3', classe: 'no-lista' }); s.legenda('itens[2] recebe o terceiro evento; quantidade = 3'); },
+        s => { s.legenda('Consulta: percorremos os índices de 0 a quantidade - 1'); },
+        s => { s.marcar([1], 'foco'); s.legenda('Consulta: lê itens[0]'); },
+        s => { s.marcar([1], ''); s.marcar([2], 'foco'); s.legenda('Consulta: lê itens[1]'); },
+        s => { s.marcar([2], ''); s.marcar([3], 'foco'); s.legenda('Consulta: lê itens[2]; chegamos a quantidade - 1'); }
       ]
     }
   };
   function ordenar(s) { s.itens.sort((a, b) => a.data - b.data || a.id - b.id); }
-  function inserir(s, item) { s.itens.splice(s.itens.length - 1, 0, item); }   /* antes do NULL */
+  function inserir(s, item) { s.itens.splice(s.itens.length - 1, 0, item); }   /* antes da posição livre */
 
   const cenas = new Map();
   document.querySelectorAll('[data-cena]').forEach(el => cenas.set(el, criarCena(el, CENAS[el.dataset.cena])));

@@ -24,15 +24,15 @@
     { id: 'pilha', nome: 'Pilha · LIFO', cor: 'var(--lifo)', comandos: [5],
       titulo: 'O estorno desfaz\na última efetivada',
       sub: 'Cada operação efetivada foi para o topo da pilha. Estornar tira sempre o topo.' },
-    { id: 'agenda', nome: 'Agenda · qsort', cor: 'var(--agenda)', comandos: [6, 7, 8, 9, 10, 11],
+    { id: 'agenda', nome: 'Agenda · inserção', cor: 'var(--agenda)', comandos: [6, 7, 8, 9, 10, 11],
       titulo: 'Na data certa,\nna ordem certa',
       sub: 'Pagamentos agendados ficam ordenados por data. No mesmo dia, vale quem entrou antes.' },
     { id: 'pilha', nome: 'Pilha · LIFO', cor: 'var(--lifo)', comandos: [12, 13],
       titulo: 'De volta à pilha,\naté esvaziar',
       sub: 'Os agendados não entraram na pilha. O topo ainda é o saque da Carla.' },
-    { id: 'lista', nome: 'Histórico · lista', cor: 'var(--lista)', cena: cenaHistorico,
-      titulo: 'Tudo ficou registrado,\nnó por nó',
-      sub: 'Cada evento virou um nó criado com malloc e ligado no fim da lista encadeada.' }
+    { id: 'lista', nome: 'Histórico · vetor', cor: 'var(--lista)', cena: cenaHistorico,
+      titulo: 'Tudo ficou registrado,\nposição por posição',
+      sub: 'Cada evento ocupou a próxima posição livre do vetor do histórico.' }
   ];
 
   /* ---------------- Montagem ---------------- */
@@ -84,19 +84,19 @@
     topo.querySelectorAll('.f-caps li').forEach(li => li.classList.toggle('atual', li.dataset.cap === id));
   }
 
-  /* Histórico: apaga o resto e percorre a lista do início até NULL */
+  /* Histórico: destaca cada posição ocupada do vetor */
   async function cenaHistorico() {
     const nos = Array.from(document.querySelectorAll('#historico .no'));
     document.documentElement.classList.add('foco-hist');
-    legenda('Histórico · lista encadeada',
-      nos.length + ' eventos, ' + nos.length + ' nós. Para mostrar o histórico, o programa segue os ponteiros "proximo" do início até NULL.');
+    legenda('Histórico · vetor encadeada',
+      nos.length + ' eventos em ' + nos.length + ' posições. Para mostrar o histórico, o programa percorre os índices de 0 a quantidade - 1.');
     await espera(1200);
     for (const no of nos) {
       nos.forEach(n => n.classList.toggle('f-aceso', n === no));
       await espera(380);
     }
     nos.forEach(n => n.classList.remove('f-aceso'));
-    legenda('Histórico · lista encadeada', 'Ao sair do programa, free devolve a memória de cada nó.');
+    legenda('Histórico · vetor encadeada', 'Ao reiniciar o programa, quantidade volta a zero e o vetor pode ser reutilizado.');
     await espera(3200);
     document.documentElement.classList.remove('foco-hist');
   }
@@ -116,7 +116,7 @@
     legenda('Banco EP', 'Três contas: Ana com R$ 500,00, Bruno com R$ 200,00 e Carla com R$ 50,00. Hoje é 05/11/2026.');
     await mostrarCartao({ icone: true, rotulo: 'EP de Algoritmos · Senac · 2026',
       titulo: 'Transações bancárias\ncom pilha e fila em C',
-      sub: 'Fila, pilha, agenda com qsort e lista encadeada funcionando, passo a passo.' }, 4500);
+      sub: 'Fila, pilha, agenda por inserção e histórico em vetor, passo a passo.' }, 4500);
     await espera(1800);
 
     let n = 0;
@@ -134,7 +134,7 @@
 
     await mostrarCartao({ icone: true, rotulo: 'Resumo',
       titulo: 'Fila para a ordem justa.\nPilha para desfazer com segurança.',
-      fatos: [['62', 'verificações nos testes em C'], ['25', 'no simulador'], ['19', 'linhas idênticas às do banco.exe']] }, 6000, true);
+      fatos: [['72', 'verificações nos testes em C'], ['32', 'no simulador'], ['19', 'linhas idênticas às do banco.exe']] }, 6000, true);
     window.__filmeFim = true;
   }
 

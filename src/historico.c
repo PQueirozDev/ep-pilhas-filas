@@ -1,46 +1,25 @@
-/*
- * historico.c
- * -----------
- * Lista encadeada do histórico (ver historico.h).
- */
-
+/* Cada evento ocupa a próxima posição livre do vetor do histórico. */
 #include <stdio.h>
-#include <stdlib.h>     /* malloc, free, NULL */
-#include "historico.h"
+#include "sistema.h"
 
-void iniciarHistorico(Historico *h)
+void iniciarHistorico(void)
 {
-    h->inicio = NULL;
-    h->fim = NULL;
-    h->quantidade = 0;
+    banco.historico.quantidade = 0;
 }
 
-int registrarHistorico(Historico *h, Operacao op, int situacao, int data)
+int historicoTemEspaco(int novos)
 {
-    /*
-     * CONCEITO NOVO: malloc
-     *   Pede ao sistema um pedaço de memória do tamanho de um NoHistorico
-     *   (sizeof calcula esse tamanho) e devolve o ENDEREÇO dele.
-     *   Essa memória continua existindo depois que a função termina
-     *   (diferente de uma variável local) e só é devolvida com free().
-     *   Se não houver memória, malloc devolve NULL.
-     */
-    NoHistorico *novo = (NoHistorico *) malloc(sizeof(NoHistorico));
-    if (novo == NULL) {
-        return 0;
-    }
-    novo->op = op;
-    novo->situacao = situacao;
-    novo->data = data;
-    novo->proximo = NULL;          /* será o último: não aponta para ninguém */
+    return novos >= 0 && novos <= CAPACIDADE_HISTORICO - banco.historico.quantidade;
+}
 
-    if (h->inicio == NULL) {       /* lista vazia: o novo é o primeiro e o último */
-        h->inicio = novo;
-    } else {
-        h->fim->proximo = novo;    /* o antigo último passa a apontar para o novo */
-    }
-    h->fim = novo;
-    h->quantidade++;
+int registrarHistorico(Operacao op, int situacao, int data)
+{
+    int pos = banco.historico.quantidade;
+    if (!historicoTemEspaco(1)) return 0;
+    banco.historico.itens[pos].op = op;
+    banco.historico.itens[pos].situacao = situacao;
+    banco.historico.itens[pos].data = data;
+    banco.historico.quantidade++;
     return 1;
 }
 
@@ -58,40 +37,19 @@ void imprimirSituacao(int situacao)
     }
 }
 
-void mostrarHistorico(Historico *h, int conta)
+void mostrarHistorico(int conta)
 {
-    NoHistorico *atual;
-    int mostrados = 0;
-
-    /* Percorrer a lista: começa no início e vai seguindo "proximo"
-     * até chegar em NULL (fim da corrente). */
-    for (atual = h->inicio; atual != NULL; atual = atual->proximo) {
-        if (conta != 0 &&
-            atual->op.contaOrigem != conta &&
-            atual->op.contaDestino != conta) {
-            continue;   /* não envolve a conta pedida: pula */
-        }
+    int i, mostrados = 0;
+    RegistroHistorico atual;
+    for (i = 0; i < banco.historico.quantidade; i++) {
+        atual = banco.historico.itens[i];
+        if (conta != 0 && atual.op.contaOrigem != conta && atual.op.contaDestino != conta) continue;
         printf("   ");
-        imprimirData(atual->data);
+        imprimirData(atual.data);
         printf("  ");
-        imprimirSituacao(atual->situacao);
-        imprimirOperacao(atual->op);
+        imprimirSituacao(atual.situacao);
+        imprimirOperacao(atual.op);
         mostrados++;
     }
-    if (mostrados == 0) {
-        printf("   (nenhum registro)\n");
-    }
-}
-
-void liberarHistorico(Historico *h)
-{
-    NoHistorico *atual = h->inicio;
-    NoHistorico *seguinte;
-
-    while (atual != NULL) {
-        seguinte = atual->proximo;  /* guarda o próximo ANTES de liberar,   */
-        free(atual);                /* pois depois do free não podemos mais */
-        atual = seguinte;           /* ler nada de dentro de "atual"        */
-    }
-    iniciarHistorico(h);            /* volta ao estado de lista vazia */
+    if (mostrados == 0) printf("   (nenhum registro)\n");
 }

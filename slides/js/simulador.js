@@ -25,7 +25,7 @@
   let velocidade = 1;
   const filaPassos = [];                        /* passos esperando para aparecer */
   let tocando = false, pulando = false, liberar = null, timer = null;
-  const elementos = new Map();                  /* chave -> elemento (fichas e nós) */
+  const elementos = new Map();                  /* chave -> elemento (fichas e registros) */
   let fnAtual = null, hojeAtual = null;
 
   const duracao = () => (movimentoReduzido.matches || pulando) ? 0 : Math.round(520 / velocidade);
@@ -48,7 +48,7 @@
   }
   const CLASSE_SIT = { 1: 'ok', 2: 'erro', 3: 'estorno', 4: 'agenda', 5: 'agenda', 6: 'ok', 7: 'erro' };
   function htmlNo(h) {
-    return '<div class="caixa"><span class="sit">' + esc(B.NOME_SIT[h.situacao].trim()) + '</span>' +
+    return '<div class="caixa"><span class="sit">[' + (h.id - 1) + '] ' + esc(B.NOME_SIT[h.situacao].trim()) + '</span>' +
       '<span class="det">#' + h.op.numero + ' ' + B.NOME_CURTO[h.op.tipo].toLowerCase() + ' ' +
       B.reais(h.op.valor) + ' · ' + dataCurta(h.data) + '</span></div>';
   }

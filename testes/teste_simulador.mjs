@@ -101,5 +101,28 @@ console.log('\n5. Passos bem formados');
   verificar(P.every(p => p.foto && typeof p.legenda === 'string' && p.legenda.length > 0), 'todo passo tem foto e legenda');
 }
 
+console.log('\n6. Histórico com limite fixo');
+{
+  const b = new B.Banco();
+  b.solicitarOperacao(B.TIPO_DEPOSITO, 0, 1, 10);
+  b.processarProximo();
+  b.agendarPagamento(1, 20, 20261106);
+  b.agendarPagamento(1, 30, 20261106);
+  while (b.historico.length < 1000) b.historico.push({ ...b.historico[0], id: b.historico.length + 1 });
+  const numero = b.proximoNumero;
+  verificar(logs(b.agendarPagamento(1, 1, 20261107))[0].includes('Histórico cheio') && b.proximoNumero === numero, 'agendamento cheio não consome número');
+  verificar(logs(b.estornar())[0].includes('Histórico cheio') && b.pilha.length === 1 && b.contas[0].saldo === 510, 'estorno cheio preserva pilha e saldo');
+  verificar(logs(b.cancelarAgendamento(2))[0].includes('Histórico cheio') && b.agenda.length === 2, 'cancelamento cheio preserva agenda');
+  verificar(logs(b.cancelarAgendamento(99))[0].includes('número 99'), 'cancelamento inexistente continua identificado');
+  b.solicitarOperacao(B.TIPO_DEPOSITO, 0, 1, 5);
+  const P = b.processarTodos();
+  verificar(logs(P)[0].includes('Histórico cheio') && b.fila.quantidade === 1 && b.contas[0].saldo === 510, 'fila inteira para sem perder pedido nem alterar saldo');
+  b.historico.pop();
+  verificar(logs(b.avancarData(20261106))[0].includes('Histórico cheio') && b.hoje === B.DATA_INICIAL && b.agenda.length === 2, 'avanço exige espaço para todos os vencidos');
+  b.historico.pop();
+  b.avancarData(20261106);
+  verificar(b.historico.length === 1000 && b.agenda.length === 0 && b.contas[0].saldo === 460, 'duas vagas permitem executar os dois vencidos');
+}
+
 console.log('\n' + (total - falhas) + ' de ' + total + ' verificações passaram.');
 process.exit(falhas ? 1 : 0);

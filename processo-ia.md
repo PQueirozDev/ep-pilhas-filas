@@ -2,6 +2,11 @@
 
 Projeto: EP de Algoritmos (Senac): pilhas e filas aplicadas a transações bancárias.
 
+**Versão atual (iteração 11):** a pedido do usuário, o programa usa vetores, índices,
+um banco global e retorno por valor, sem ponteiros explícitos. O histórico é um vetor
+de 1.000 registros, e a agenda usa ordenação por inserção. As referências a lista
+encadeada, ponteiros e `qsort` nas iterações 1 a 10 documentam versões anteriores.
+
 ## Como a IA foi usada
 
 | Papel | Quem |
@@ -27,6 +32,7 @@ resultado**.
 | 8 | 05/11 | README e slides | slides publicados |
 | 9 | 10/11 | Simulador animado e slides novos | 25 verificações novas OK |
 | 10 | 10/11 | Vídeo da demonstração | MP4 gravado quadro a quadro |
+| 11 | 10/11 | Remoção dos ponteiros explícitos | 72 verificações em C, 32 no simulador e 12 no terminal |
 
 ---
 
@@ -286,3 +292,41 @@ Metadados conferidos com FFprobe e quadro final extraído com FFmpeg: o filme ch
 ao cartão de resumo. Os quatro executáveis de teste em C passaram sem falhas;
 as 25 verificações do simulador também passaram, incluindo as 19 linhas da demonstração.
 O link “Ver o vídeo” está nos slides. Revisão local aprovada pelo usuário para commit.
+
+---
+
+## Iteração 11 · 2026-11-10 · Versão sem ponteiros explícitos
+
+**Pedido:** retirar os ponteiros do trabalho. O usuário confirmou a alteração após
+ser informado de que isso substituiria a lista encadeada e o `qsort`.
+
+**Solução e alterações:**
+- Um único `Sistema banco` global guarda contas e estruturas. As funções usam campos
+  acessados pelo ponto e índices dos vetores; não recebem endereços de estruturas.
+- Retiradas da fila, pilha e agenda devolvem `Operacao` por valor. `numero == 0`
+  indica ausência. A busca de conta devolve o índice ou `-1`.
+- Agenda ordenada por inserção, comparando data e número de entrada por valor.
+- Histórico em vetor de 1.000 registros. Ao faltar espaço, o comando é recusado
+  antes de alterar saldos ou estruturas; o avanço de data reserva espaço para todos
+  os vencidos, evitando execução parcial por falta de registro.
+- Entrada lida por caracteres e índices, sem variáveis de ponteiro, `scanf`,
+  `sscanf` ou passagem de endereços. Valores decimais aceitam ponto, vírgula e
+  notação científica; inteiros fora da faixa e linhas longas são recusados.
+- README, slides, simulador e roteiro do filme passam a explicar a implementação
+  em vetores. `ferramentas/sincronizar-codigo.mjs` atualiza o painel com as funções
+  reais dos fontes C.
+
+**Motivo:** simplificar os conceitos usados no código conforme solicitado. A versão
+mantém um banco por execução e troca o crescimento dinâmico do histórico por um
+limite explícito. As bibliotecas padrão de C continuam recebendo vetores de texto
+conforme suas APIs; não há manipulação explícita de endereços no código do trabalho.
+
+**Validação:** compilação com `gcc -Wall -Wextra -std=c99`, sem avisos; 72 verificações
+em C, 32 no motor JavaScript e 12 testes de terminal passaram. As 19 linhas de eventos
+da demonstração continuam iguais à referência. Chrome conferido em 1440 px e 390 px:
+14 slides, 13 registros no roteiro, saldos finais corretos, sem erros JavaScript e
+sem rolagem horizontal da página.
+
+**Vídeo atualizado:** filme regravado com 145,5 segundos, em 1920×1080 a 60 fps;
+decodificação completa validada com FFmpeg, capa substituída e quadros do histórico
+em vetor e do encerramento conferidos visualmente.

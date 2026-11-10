@@ -15,15 +15,11 @@
 
 int falhas = 0;
 
-void verificar(int condicao, const char *descricao)
-{
-    if (condicao) {
-        printf("  [OK]     %s\n", descricao);
-    } else {
-        printf("  [FALHOU] %s\n", descricao);
-        falhas++;
-    }
-}
+/* Macro: imprime a descrição sem declarar parâmetros de texto. */
+#define verificar(condicao, descricao) do { \
+    if (condicao) { printf("  [OK]     %s\n", descricao); } \
+    else { printf("  [FALHOU] %s\n", descricao); falhas++; } \
+} while (0)
 
 /* Mostra o resumo e devolve o código de saída do programa (0 = sucesso). */
 int resumoDosTestes(void)

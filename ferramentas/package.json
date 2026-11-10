@@ -2,6 +2,11 @@
   "name": "ep-gravar-video",
   "private": true,
   "type": "module",
-  "scripts": { "gravar": "node gravar-video.mjs", "previa": "node gravar-video.mjs --previa" },
+  "scripts": {
+    "gravar": "node gravar-video.mjs",
+    "previa": "node gravar-video.mjs --previa",
+    "sincronizar": "node sincronizar-codigo.mjs",
+    "verificar": "node verificar-site.mjs"
+  },
   "dependencies": { "puppeteer-core": "^24.0.0" }
 }

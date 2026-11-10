@@ -1,63 +1,60 @@
-/*
- * fila.c
- * ------
- * Implementação da fila circular de pedidos imediatos (ver fila.h).
- */
+/* Fila FIFO circular em vetor: as funções acessam banco.pedidos.
+ * O estado fica no banco global declarado em sistema.h.
+ * Remoções devolvem uma Operacao por valor; numero 0 indica ausência. */
 
 #include <stdio.h>
-#include "fila.h"
+#include "sistema.h"
 
-void iniciarFila(Fila *f)
+void iniciarFila(void)
 {
-    f->inicio = 0;
-    f->quantidade = 0;
+    banco.pedidos.inicio = 0;
+    banco.pedidos.quantidade = 0;
 }
 
-int filaVazia(Fila *f)
+int filaVazia(void)
 {
-    return f->quantidade == 0;
+    return banco.pedidos.quantidade == 0;
 }
 
-int filaCheia(Fila *f)
+int filaCheia(void)
 {
-    return f->quantidade == CAPACIDADE_FILA;
+    return banco.pedidos.quantidade == CAPACIDADE_FILA;
 }
 
-int enfileirar(Fila *f, Operacao op)
+int enfileirar(Operacao op)
 {
     int fim;
 
-    if (filaCheia(f)) {
+    if (filaCheia()) {
         return 0;
     }
-    fim = (f->inicio + f->quantidade) % CAPACIDADE_FILA;  /* 1ª posição livre */
-    f->itens[fim] = op;
-    f->quantidade++;
+    fim = (banco.pedidos.inicio + banco.pedidos.quantidade) % CAPACIDADE_FILA;
+    banco.pedidos.itens[fim] = op;
+    banco.pedidos.quantidade++;
     return 1;
 }
 
-int desenfileirar(Fila *f, Operacao *saida)
+Operacao desenfileirar(void)
 {
-    if (filaVazia(f)) {
-        return 0;
-    }
-    *saida = f->itens[f->inicio];                    /* copia o primeiro       */
-    f->inicio = (f->inicio + 1) % CAPACIDADE_FILA;   /* o segundo vira primeiro */
-    f->quantidade--;
-    return 1;
+    Operacao saida = {0}; /* numero 0 indica que não havia operação. */
+    if (filaVazia()) return saida;
+    saida = banco.pedidos.itens[banco.pedidos.inicio];
+    banco.pedidos.inicio = (banco.pedidos.inicio + 1) % CAPACIDADE_FILA;
+    banco.pedidos.quantidade--;
+    return saida;
 }
 
-void mostrarFila(Fila *f)
+void mostrarFila(void)
 {
     int i, posicao;
 
-    if (filaVazia(f)) {
+    if (filaVazia()) {
         printf("   (fila vazia)\n");
         return;
     }
-    for (i = 0; i < f->quantidade; i++) {
-        posicao = (f->inicio + i) % CAPACIDADE_FILA;
+    for (i = 0; i < banco.pedidos.quantidade; i++) {
+        posicao = (banco.pedidos.inicio + i) % CAPACIDADE_FILA;
         printf("   %dº  ", i + 1);
-        imprimirOperacao(f->itens[posicao]);
+        imprimirOperacao(banco.pedidos.itens[posicao]);
     }
 }

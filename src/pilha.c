@@ -1,60 +1,56 @@
-/*
- * pilha.c
- * -------
- * Implementação da pilha de operações efetivadas (ver explicação em pilha.h).
- */
+/* Pilha LIFO em vetor: as funções acessam banco.efetivadas.
+ * O estado fica no banco global declarado em sistema.h.
+ * Remoções devolvem uma Operacao por valor; numero 0 indica ausência. */
 
 #include <stdio.h>
-#include "pilha.h"
+#include "sistema.h"
 
-void iniciarPilha(Pilha *p)
+void iniciarPilha(void)
 {
-    /* Não precisamos apagar o vetor: basta dizer que há 0 itens.
-     * O que estiver nas posições "livres" será sobrescrito ao empilhar. */
-    p->quantidade = 0;
+
+    banco.efetivadas.quantidade = 0;
 }
 
-int pilhaVazia(Pilha *p)
+int pilhaVazia(void)
 {
-    return p->quantidade == 0;   /* a comparação já vale 1 ou 0 */
+    return banco.efetivadas.quantidade == 0;
 }
 
-int pilhaCheia(Pilha *p)
+int pilhaCheia(void)
 {
-    return p->quantidade == CAPACIDADE_PILHA;
+    return banco.efetivadas.quantidade == CAPACIDADE_PILHA;
 }
 
-int empilhar(Pilha *p, Operacao op)
+int empilhar(Operacao op)
 {
-    if (pilhaCheia(p)) {
-        return 0;                /* sem espaço: quem chamou decide o que avisar */
+    if (pilhaCheia()) {
+        return 0;
     }
-    p->itens[p->quantidade] = op;   /* grava na primeira posição livre (novo topo) */
-    p->quantidade++;
+    banco.efetivadas.itens[banco.efetivadas.quantidade] = op;
+    banco.efetivadas.quantidade++;
     return 1;
 }
 
-int desempilhar(Pilha *p, Operacao *saida)
+Operacao desempilhar(void)
 {
-    if (pilhaVazia(p)) {
-        return 0;                /* caso extremo: nada a estornar */
-    }
-    p->quantidade--;                 /* o topo passa a ser o item de baixo...   */
-    *saida = p->itens[p->quantidade];/* ...e copiamos o antigo topo para *saida */
-    return 1;
+    Operacao saida = {0}; /* numero 0 indica que não havia operação. */
+    if (pilhaVazia()) return saida;
+    banco.efetivadas.quantidade--;
+    saida = banco.efetivadas.itens[banco.efetivadas.quantidade];
+    return saida;
 }
 
-void mostrarPilha(Pilha *p)
+void mostrarPilha(void)
 {
     int i;
 
-    if (pilhaVazia(p)) {
+    if (pilhaVazia()) {
         printf("   (pilha vazia)\n");
         return;
     }
-    /* Percorre de trás para frente: do topo (último) até a base (primeiro). */
-    for (i = p->quantidade - 1; i >= 0; i--) {
-        printf("   %s ", (i == p->quantidade - 1) ? "TOPO ->" : "       ");
-        imprimirOperacao(p->itens[i]);
+
+    for (i = banco.efetivadas.quantidade - 1; i >= 0; i--) {
+        printf("   %s ", (i == banco.efetivadas.quantidade - 1) ? "TOPO ->" : "       ");
+        imprimirOperacao(banco.efetivadas.itens[i]);
     }
 }
