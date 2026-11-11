@@ -9,15 +9,17 @@ Sistema banco;
 
 #define VALOR_MAXIMO 1000000.00
 
+/* O 0.000001 compensa o erro do double: 1.005 * 100 dá 100.4999... */
 double arredondarCentavos(double valor)
 {
-    return (long long) (valor * 100 + 0.5) / 100.0;
+    return (long long) (valor * 100 + 0.5 + 0.000001) / 100.0;
 }
 
+/* Também recusa valores que viram R$ 0.00 depois do arredondamento. */
 int valorValido(double valor)
 {
-    if (!(valor > 0) || valor > VALOR_MAXIMO) {
-        printf("  Valor deve ser maior que zero e até R$ %.2f.\n", VALOR_MAXIMO);
+    if (!(valor > 0) || valor > VALOR_MAXIMO || arredondarCentavos(valor) < 0.01) {
+        printf("  Valor deve ser de R$ 0.01 até R$ %.2f.\n", VALOR_MAXIMO);
         return 0;
     }
     return 1;

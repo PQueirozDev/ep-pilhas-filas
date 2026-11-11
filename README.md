@@ -13,6 +13,19 @@ explicações de cada passo e trechos do código C.
 
 [![Prévia da demonstração animada](slides/midia/banco-ep-capa.jpg)](https://ep-pilhas-filas.vercel.app/midia/banco-ep.mp4)
 
+## Começo rápido (Windows)
+
+```powershell
+git clone https://github.com/PQueirozDev/ep-pilhas-filas.git
+cd ep-pilhas-filas
+.\compilar.bat                              # gera banco.exe e os testes
+.\testar.bat                                # 72 verificações em C
+cmd /c "banco.exe < demo\entrada-demo.txt"  # demonstração automática
+.\banco.exe                                 # uso interativo
+```
+
+Requisito: `gcc` no `PATH` (MinGW/WinLibs). Linux/macOS: `make && make testes && ./banco`.
+
 ## Como as estruturas trabalham juntas
 
 Um pedido imediato entra na **fila**. Ao processá-lo, o sistema verifica o saldo: operações
@@ -26,6 +39,23 @@ e são registrados no histórico ao executar. **Agendados não entram na pilha d
 | **Pilha (LIFO)** | operações imediatas efetivadas (`src/pilha.c`) | o estorno tenta desfazer a **última** empilhada; se o dinheiro necessário já foi usado, o estorno é recusado |
 | **Vetor + ordenação por inserção** | pagamentos agendados (`src/agendados.c`) | ordenados por data; o **número de entrada** desempata datas iguais (mantém FIFO) |
 | **Vetor de registros** | histórico (`src/historico.c`) | cada evento ocupa a próxima posição livre; capacidade de 1.000 registros |
+
+### Custo das operações
+
+| Operação | Função | Complexidade |
+|---|---|---|
+| Entrar na fila / sair da fila | `enfileirar`, `desenfileirar` | O(1): índice circular com `%`, sem deslocar itens |
+| Empilhar / desempilhar | `empilhar`, `desempilhar` | O(1) |
+| Agendar pagamento | `agendar` + `ordenarAgenda` | O(n): o vetor já está ordenado, o novo item anda até sua posição |
+| Cancelar agendado / retirar vencido | `cancelarAgendado`, `retirarVencido` | O(n): busca e deslocamento no vetor |
+| Registrar no histórico | `registrarHistorico` | O(1): próxima posição livre |
+
+| Limite | Valor | Onde |
+|---|---|---|
+| Fila de pedidos | 50 | `CAPACIDADE_FILA` em `src/fila.h` |
+| Pilha de estornos | 100 | `CAPACIDADE_PILHA` em `src/pilha.h` |
+| Agenda | 50 | `CAPACIDADE_AGENDA` em `src/agendados.h` |
+| Histórico | 1.000 | `CAPACIDADE_HISTORICO` em `src/historico.h` |
 
 ### Implementação sem ponteiros explícitos
 

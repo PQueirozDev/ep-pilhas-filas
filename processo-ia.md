@@ -11,10 +11,10 @@ encadeada, ponteiros e `qsort` nas iterações 1 a 10 documentam versões anteri
 
 | Papel | Quem |
 |---|---|
-| Requisitos e decisões de estrutura (fila, pilha, qsort com desempate, lista encadeada) | equipe |
+| Requisitos e decisões de estrutura (fila, pilha, agenda ordenada com desempate, histórico; na versão atual em vetores) | equipe |
 | Implementação em incrementos pequenos, comentada para iniciantes | Claude (assistente de código) |
 | Revisão independente do código | Codex (segunda IA), com cada apontamento conferido antes de corrigir |
-| Verificação | testes automáticos em C (62 verificações) e no simulador (25 verificações) |
+| Verificação | testes automáticos em C (72 verificações), no simulador (32) e no terminal (12) |
 
 As decisões da iteração 1 foram tratadas como fixas: nenhuma foi reaberta sem consultar a
 equipe. Cada entrada abaixo segue o formato **pedido · solução proposta · alteração · motivo ·
@@ -33,6 +33,7 @@ resultado**.
 | 9 | 10/11 | Simulador animado e slides novos | 25 verificações novas OK |
 | 10 | 10/11 | Vídeo da demonstração | MP4 gravado quadro a quadro |
 | 11 | 10/11 | Remoção dos ponteiros explícitos | 72 verificações em C, 32 no simulador e 12 no terminal |
+| 12 | 11/11 | Revisão final do Codex e preparação da apresentação | 2 correções de valor, textos atualizados; testes OK |
 
 ---
 
@@ -330,3 +331,28 @@ sem rolagem horizontal da página.
 **Vídeo atualizado:** filme regravado com 145,5 segundos, em 1920×1080 a 60 fps;
 decodificação completa validada com FFmpeg, capa substituída e quadros do histórico
 em vetor e do encerramento conferidos visualmente.
+
+---
+
+## Iteração 12 · 2026-11-11 · Revisão final do Codex e preparação da apresentação
+
+**Pedido:** revisar todos os arquivos com o Codex antes da apresentação, organizar o GitHub
+e o README e preparar um roteiro com as perguntas prováveis do professor.
+
+**Revisão do Codex (14 apontamentos, todos conferidos no código):**
+- Corrigido: `arredondarCentavos` perdia um centavo por erro do `double`
+  (1,005 virava 1,00). Somamos uma pequena folga antes de truncar, em C e no motor JS.
+- Corrigido: valores abaixo de meio centavo (ex.: 0,001) viravam operações de R$ 0,00.
+  `valorValido` agora recusa o que arredonda para zero, em C e no JS.
+- Corrigido: legenda do filme dizia "vetor encadeada"; o slide da demonstração passou a
+  dizer "saída resumida", porque abrevia linhas da saída real; resumo deste diário atualizado.
+- Mantidos como limitações conhecidas (não alcançáveis pelo menu): tipo de operação
+  inexistente e data fora do calendário em chamadas diretas às funções, teste do simulador
+  com referência fixa, animação da agenda usando `.sort()` nos slides, falta de teste
+  para agenda cheia.
+
+**Organização:** descrição e tópicos do repositório no GitHub; README com começo rápido,
+tabela de complexidade e limites das estruturas.
+
+**Validação:** testes em C, no simulador e no terminal executados novamente após as correções.
+

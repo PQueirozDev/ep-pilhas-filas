@@ -41,7 +41,7 @@
     "linhas": [
       "double arredondarCentavos(double valor)",
       "{",
-      "    return (long long) (valor * 100 + 0.5) / 100.0;",
+      "    return (long long) (valor * 100 + 0.5 + 0.000001) / 100.0;",
       "}"
     ]
   },
@@ -50,8 +50,8 @@
     "linhas": [
       "int valorValido(double valor)",
       "{",
-      "    if (!(valor > 0) || valor > VALOR_MAXIMO) {",
-      "        printf(\"  Valor deve ser maior que zero e até R$ %.2f.\\n\", VALOR_MAXIMO);",
+      "    if (!(valor > 0) || valor > VALOR_MAXIMO || arredondarCentavos(valor) < 0.01) {",
+      "        printf(\"  Valor deve ser de R$ 0.01 até R$ %.2f.\\n\", VALOR_MAXIMO);",
       "        return 0;",
       "    }",
       "    return 1;",
@@ -805,7 +805,7 @@
     return 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   }
 
-  function arredondarCentavos(valor) { return Math.trunc(valor * 100 + 0.5) / 100; }
+  function arredondarCentavos(valor) { return Math.trunc(valor * 100 + 0.5 + 0.000001) / 100; }
 
   function criarOperacao(numero, tipo, contaOrigem, contaDestino, valor) {
     return { numero, tipo, contaOrigem, contaDestino, valor, data: 0 };
@@ -855,11 +855,11 @@
     }
 
     valorValido(P, valor, fn, linha) {
-      if (!(valor > 0) || valor > VALOR_MAXIMO) {
+      if (!(valor > 0) || valor > VALOR_MAXIMO || arredondarCentavos(valor) < 0.01) {
         this.passo(P, {
           fn, linha, tom: 'erro',
-          legenda: 'Valor recusado antes de entrar em qualquer estrutura: precisa ser maior que zero e até R$ 1.000.000,00.',
-          log: ['  Valor deve ser maior que zero e até R$ ' + f2(VALOR_MAXIMO) + '.']
+          legenda: 'Valor recusado antes de entrar em qualquer estrutura: precisa ser de R$ 0,01 até R$ 1.000.000,00.',
+          log: ['  Valor deve ser de R$ 0.01 até R$ ' + f2(VALOR_MAXIMO) + '.']
         });
         return false;
       }

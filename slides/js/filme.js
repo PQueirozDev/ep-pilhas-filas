@@ -88,7 +88,7 @@
   async function cenaHistorico() {
     const nos = Array.from(document.querySelectorAll('#historico .no'));
     document.documentElement.classList.add('foco-hist');
-    legenda('Histórico · vetor encadeada',
+    legenda('Histórico · vetor',
       nos.length + ' eventos em ' + nos.length + ' posições. Para mostrar o histórico, o programa percorre os índices de 0 a quantidade - 1.');
     await espera(1200);
     for (const no of nos) {
@@ -96,7 +96,7 @@
       await espera(380);
     }
     nos.forEach(n => n.classList.remove('f-aceso'));
-    legenda('Histórico · vetor encadeada', 'Ao reiniciar o programa, quantidade volta a zero e o vetor pode ser reutilizado.');
+    legenda('Histórico · vetor', 'Ao reiniciar o programa, quantidade volta a zero e o vetor pode ser reutilizado.');
     await espera(3200);
     document.documentElement.classList.remove('foco-hist');
   }
