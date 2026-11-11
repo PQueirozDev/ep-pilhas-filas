@@ -41,6 +41,17 @@ entram na pilha.
 | **Vetor ordenado por inserção** | `src/agendados.c` | agendados por data; o número de entrada desempata datas iguais | O(n) |
 | **Vetor de registros** | `src/historico.c` | um evento por posição, até 1.000 | O(1) |
 
+### Onde estão as operações de pilha e fila
+
+| Operação | Função | Onde é usada |
+|---|---|---|
+| Enfileirar (entra no fim) | `enfileirar` · `src/fila.c` | `solicitarOperacao` · `src/sistema.c` |
+| Desenfileirar (sai o primeiro) | `desenfileirar` · `src/fila.c` | `processarProximo` · `src/sistema.c` |
+| Empilhar (novo topo) | `empilhar` · `src/pilha.c` | `processarProximo` (efetivada) e `estornar` (estorno recusado volta ao topo) |
+| Desempilhar (sai o topo) | `desempilhar` · `src/pilha.c` | `estornar` · `src/sistema.c` |
+| Fila/pilha vazia ou cheia | `filaVazia`, `filaCheia`, `pilhaVazia`, `pilhaCheia` | `sistema.c`, antes de cada operação |
+| Inserir ordenado na agenda | `agendar` + `ordenarAgenda` · `src/agendados.c` | `agendarPagamento` · `src/sistema.c` |
+
 O programa não usa ponteiros explícitos nem alocação dinâmica: o estado fica em um `Sistema banco`
 global, as funções trabalham com vetores e índices e devolvem `Operacao` por valor
 (`numero == 0` indica "nenhuma operação").
@@ -61,6 +72,22 @@ O programa começa em **05/11/2026** com as contas **1 Ana (R$ 500)**, **2 Bruno
 
 **Exemplo de FIFO:** peça dois saques da conta 3 (R$ 40 e R$ 30) e processe com a opção 6.
 O primeiro é efetivado e o segundo é recusado, porque restam R$ 10. A opção 7 estorna o saque efetivado.
+
+## Como apresentar
+
+Roteiro de 15 minutos: **3 min** de problema, **5 min** de demonstração e **7 min** de perguntas.
+
+1. **Problema (slides 1–4):** abra a [apresentação](https://ep-pilhas-filas.vercel.app/)
+   (← / → navegam, **O** mostra a visão geral, **S** abre o simulador).
+2. **Demonstração:** rode `.\banco.exe` e faça dois saques da conta 3 (R$ 40 e R$ 30), depois as opções
+   `6` (processar a fila), `11` (situação), `7` (estorno), `7` de novo (pilha vazia) e `12` (histórico).
+   Mostre `enfileirar`/`desenfileirar` em `src/fila.c` e `empilhar`/`desempilhar` em `src/pilha.c`.
+   A agenda aparece na demonstração automática ou no [simulador](https://ep-pilhas-filas.vercel.app/simulador.html).
+3. **Perguntas:** o código e os testes ficam abertos para consulta.
+
+Sem `gcc` na máquina da apresentação, o `banco.exe` compilado roda em qualquer Windows 10/11 sem instalação.
+Sem internet, os slides abrem localmente com
+`python -m http.server 8000 --bind 127.0.0.1 --directory slides`.
 
 ## Casos tratados
 
@@ -91,4 +118,4 @@ para a mesma conta, estruturas cheias e histórico cheio. Entradas inválidas re
 | `testes/` | testes em C e JavaScript |
 | `demo/` | roteiro da demonstração e saída esperada |
 | `slides/` | apresentação, simulador animado e vídeo |
-| `processo-ia.md` | registro do uso de IA no desenvolvimento |
+| `processo-ia.md` | diário cronológico do uso de IA: iterações, decisões, testes e commits |

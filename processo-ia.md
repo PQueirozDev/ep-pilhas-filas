@@ -34,6 +34,26 @@ resultado**.
 | 10 | 10/11 | Vídeo da demonstração | MP4 gravado quadro a quadro |
 | 11 | 10/11 | Remoção dos ponteiros explícitos | 72 verificações em C, 32 no simulador e 12 no terminal |
 | 12 | 11/11 | Revisão final do Codex e preparação da apresentação | 2 correções de valor, textos atualizados; testes OK |
+| 13 | 11/11 | Conferência com o enunciado | README com operações de pilha/fila e roteiro de apresentação |
+
+## Commits
+
+As conversas com o agente não foram anexadas ao repositório; este diário registra, por iteração,
+os pedidos, as soluções propostas, as alterações, os motivos e os resultados.
+
+| Commit | Data | Descrição |
+|---|---|---|
+| [`1eaf94b`](https://github.com/PQueirozDev/ep-pilhas-filas/commit/1eaf94b) | 30/10 | EP Pilhas e Filas: sistema bancário em C (primeira versão) |
+| [`25c125a`](https://github.com/PQueirozDev/ep-pilhas-filas/commit/25c125a) | 30/10 | Slide 3: demonstração animada da saída real do banco.exe |
+| [`b110f58`](https://github.com/PQueirozDev/ep-pilhas-filas/commit/b110f58) | 05/11 | Recomeço do EP: fila, pilha, qsort e lista (iterações 1 a 8) |
+| [`f062b22`](https://github.com/PQueirozDev/ep-pilhas-filas/commit/f062b22) | 10/11 | Simulador animado, slides interativos e vídeo (iterações 9 e 10) |
+| [`e7c58c3`](https://github.com/PQueirozDev/ep-pilhas-filas/commit/e7c58c3) | 10/11 | README com acesso à demonstração |
+| [`6a73744`](https://github.com/PQueirozDev/ep-pilhas-filas/commit/6a73744) | 10/11 | Remove ponteiros explícitos; vetores (iteração 11) |
+| [`bee5c93`](https://github.com/PQueirozDev/ep-pilhas-filas/commit/bee5c93) | 11/11 | Corrige arredondamento e atualiza documentação (iteração 12) |
+| [`b53ee97`](https://github.com/PQueirozDev/ep-pilhas-filas/commit/b53ee97) | 11/11 | Regrava o vídeo com a legenda corrigida |
+| [`93304a7`](https://github.com/PQueirozDev/ep-pilhas-filas/commit/93304a7) | 11/11 | README enxuto |
+
+A lista completa e sempre atualizada está em `git log` e na [página de commits](https://github.com/PQueirozDev/ep-pilhas-filas/commits/main).
 
 ---
 
@@ -355,4 +375,29 @@ e o README e preparar um roteiro com as perguntas prováveis do professor.
 tabela de complexidade e limites das estruturas.
 
 **Validação:** testes em C, no simulador e no terminal executados novamente após as correções.
+
+---
+
+## Iteração 13 · 2026-11-11 · Conferência com o enunciado
+
+**Pedido:** enxugar o README e conferir se tudo o que o enunciado pede está no repositório.
+
+**Conferência com o PDF do enunciado:**
+- Entregável A (demonstração funcional com instruções de uso e de apresentação): `banco.exe`,
+  `compilar.bat`, site, simulador e vídeo. Faltava no README uma seção sobre **como apresentar**;
+  foi adicionada.
+- Entregável B (código-fonte que permita localizar as operações de pilha/fila): o README ganhou
+  uma tabela com **cada operação e o arquivo e a função onde ela está**.
+- Entregável C (registro integral): este diário cobre todas as iterações; foi acrescentada a
+  tabela de commits com links. A equipe decidiu não publicar as transcrições das conversas.
+- Roteiro de 15 minutos (3 de problema, 5 de demonstração e 7 de perguntas): o material de preparação
+  da equipe foi refeito nesses tempos.
+
+**Alteração:** README sem as seções de manutenção (regravação do vídeo, sincronização do painel);
+ficaram o que o projeto é, como rodar, como apresentar, onde estão as operações, testes e arquivos.
+
+**Contribuidores:** a tag `versao-antiga` (primeira versão, de 30/10) foi removida do GitHub porque
+seu commit era de outra conta; ela continua guardada no repositório local.
+
+**Validação:** links do README e deste diário conferidos; testes em C, no simulador e no terminal passando.
 
