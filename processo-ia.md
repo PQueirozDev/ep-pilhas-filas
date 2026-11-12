@@ -517,3 +517,12 @@ renomear o slide das estruturas para **Justificativa**.
 **Alterações:** `slides/index.html`, `slides/css/slides.css`, `ferramentas/verificar-site.mjs` e o
 README voltam ao estado da iteração 18 (10 slides, fluxo estático). O slide 3 passa a se chamar
 Objetivo e o slide 4 (Fila, Pilha, Agenda e Vetor), Justificativa.
+
+## Iteração 21 · 2026-11-12 · Texto do slide Objetivo
+
+**Pedido:** no slide Objetivo, trocar o fluxo das operações por três frases: simular um sistema
+bancário em C, processar operações bancárias e aplicar estruturas de dados na organização das operações.
+
+**Alterações:** o slide 3 de `slides/index.html` passa a ser uma lista com essas três frases, em letra
+maior (`ul.lista.grande`, em `slides/css/slides.css`). Os estilos do fluxo (`.fluxo`, `.no`, `.seta`),
+que só esse slide usava, saíram.

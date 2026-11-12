@@ -43,27 +43,11 @@
 <!-- 3. Objetivo -->
 <section class="slide" aria-label="Objetivo">
   <p class="rotulo">Objetivo</p>
-  <h2 class="gradiente">O caminho de cada operação</h2>
-  <div class="fluxo" style="margin-bottom:32px">
-    <div class="no"><b>Cliente pede</b><small>depósito, saque, transf., pagamento</small></div>
-    <span class="seta">→</span>
-    <div class="no" style="--cor:var(--fifo)"><b>FILA</b><small>espera na ordem de chegada</small></div>
-    <span class="seta">→</span>
-    <div class="no"><b>Tem saldo?</b><small>processar o 1º da fila</small></div>
-    <span class="seta">→</span>
-    <div class="no" style="--cor:var(--lifo)"><b>PILHA</b><small>efetivadas, para estorno</small></div>
-    <span class="seta">→</span>
-    <div class="no" style="--cor:var(--lista)"><b>HISTÓRICO</b><small>vetor de registros</small></div>
-  </div>
-  <div class="fluxo">
-    <div class="no"><b>Cliente agenda</b><small>pagamento com data futura</small></div>
-    <span class="seta">→</span>
-    <div class="no" style="--cor:var(--agenda)"><b>AGENDA</b><small>ordenada por inserção</small></div>
-    <span class="seta">→</span>
-    <div class="no"><b>Data chega</b><small>executa os vencidos</small></div>
-    <span class="seta">→</span>
-    <div class="no" style="--cor:var(--lista)"><b>HISTÓRICO</b><small>agendado não entra na pilha</small></div>
-  </div>
+  <ul class="lista grande">
+    <li>Simular um sistema bancário em C.</li>
+    <li>Processar operações bancárias.</li>
+    <li>Aplicar estruturas de dados na organização das operações.</li>
+  </ul>
 </section>
 
 <!-- 4. Justificativa -->
