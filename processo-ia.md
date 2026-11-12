@@ -526,3 +526,10 @@ bancário em C, processar operações bancárias e aplicar estruturas de dados n
 **Alterações:** o slide 3 de `slides/index.html` passa a ser uma lista com essas três frases, em letra
 maior (`ul.lista.grande`, em `slides/css/slides.css`). Os estilos do fluxo (`.fluxo`, `.no`, `.seta`),
 que só esse slide usava, saíram.
+
+## Iteração 22 · 2026-11-12 · Botão do simulador no fim da apresentação
+
+**Pedido:** levar o botão **Abrir o simulador** da capa para o slide 10 (Casos extremos).
+
+**Alterações (`slides/index.html`):** o botão sai da capa e entra abaixo da tabela do slide 10, que é o
+último antes do simulador. Na capa fica só **Começar a apresentação**, agora como botão principal.
