@@ -17,10 +17,13 @@ try {
     await pagina.setViewport({ width: largura, height: 900 });
     await pagina.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
     await pagina.goto(url + '/#9', { waitUntil: 'networkidle0' });
-    assert.equal(await pagina.$$eval('.slide', els => els.length), 14);
+    assert.equal(await pagina.$$eval('.slide', els => els.length), 10);
     assert.ok(await pagina.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     const slide = join(tmpdir(), 'ep-vetores-slides-' + largura + '.png');
     await pagina.screenshot({ path: slide });
+    await pagina.goto(url + '/final.html', { waitUntil: 'networkidle0' });
+    assert.equal(await pagina.$$eval('.slide', els => els.length), 4);
+    assert.ok(await pagina.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     await pagina.goto(url + '/simulador.html', { waitUntil: 'networkidle0' });
     const estado = await pagina.evaluate(async () => {
       const S = window.Simulador, B = window.BancoEP;

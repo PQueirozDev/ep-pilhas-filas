@@ -1,0 +1,164 @@
+  html, body { height: 100%; }
+  body { font-size: 18px; line-height: 28px; overflow: hidden; }
+  h1 { font-size: 60px; line-height: 1; }
+  h2 { font-size: 36px; line-height: 40px; margin-bottom: 32px; }
+  .slide .rotulo { font-size: 14px; line-height: 20px; margin-bottom: 16px; }
+
+  main { position: relative; height: 100%; }
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 64px max(64px, calc((100vw - 1200px) / 2)) 96px;
+    visibility: hidden; pointer-events: none;
+  }
+  .slide.ativo { visibility: visible; pointer-events: auto; }
+  /* Entrada em cascata: cada bloco do slide sobe e aparece */
+  .slide > *, .slide .grade > * {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 600ms var(--curva), transform 600ms var(--curva);
+    transition-delay: calc(var(--i, 0) * 80ms);
+  }
+  .slide.ativo > *, .slide.ativo .grade > * { opacity: 1; transform: none; }
+
+  .grade { display: grid; gap: 24px; }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .cartao {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 16px; padding: 24px;
+    transition: border-color 300ms var(--curva), transform 500ms var(--curva), opacity 600ms var(--curva);
+  }
+  .cartao:hover { border-color: #444; }
+  .cartao h3 { font-size: 20px; line-height: 28px; margin-bottom: 8px; }
+  .cartao p { color: var(--muted); font-size: 16px; line-height: 24px; }
+  .marca { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; }
+
+  pre {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    padding: 24px; font-size: 14px; line-height: 24px; overflow: auto; color: #D8D8D8;
+  }
+  pre .c { color: #767676; }
+  pre .k { color: var(--fifo); }
+  pre .p { color: var(--lifo); }
+  pre .v { color: var(--lista); }
+  pre .e { color: var(--erro); }
+  pre .a { color: var(--agenda); }
+
+  ul.lista { list-style: none; display: grid; gap: 12px; }
+  ul.lista li { padding-left: 24px; position: relative; }
+  ul.lista li::before { content: ""; position: absolute; left: 0; top: 10px; width: 8px; height: 8px; border-radius: 2px; background: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 16px; line-height: 24px; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 14px; line-height: 20px; }
+  td code { font-size: 14px; color: var(--lifo); }
+
+  /* Capa */
+  .capa-icone { display: grid; gap: 8px; width: 96px; margin-bottom: 40px; }
+  .capa-icone span { height: 16px; border-radius: 4px; transform: translateY(-24px); opacity: 0; transition: transform 600ms var(--curva), opacity 600ms var(--curva); }
+  .slide.ativo .capa-icone span { transform: none; opacity: 1; }
+  .capa-icone span:nth-child(1) { background: var(--fifo); transition-delay: 300ms; }
+  .capa-icone span:nth-child(2) { background: var(--lifo); transition-delay: 400ms; width: 80%; }
+  .capa-icone span:nth-child(3) { background: var(--agenda); transition-delay: 500ms; width: 60%; }
+  .capa-icone span:nth-child(4) { background: var(--lista); transition-delay: 600ms; width: 40%; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 40px; }
+
+  /* Fluxo (slide 3) */
+  .fluxo { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .no {
+    padding: 12px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 16px; line-height: 24px;
+    transition: border-color 300ms var(--curva), background-color 300ms var(--curva), transform 500ms var(--curva);
+  }
+  .no b { display: block; font-weight: 600; }
+  .no small { color: var(--muted); font-size: 12px; line-height: 16px; }
+  .no.aceso { background: var(--surface-2); border-color: var(--cor, var(--text)); transform: translateY(-4px); }
+  .seta { color: var(--muted); font-size: 20px; transition: color 300ms var(--curva); }
+  .seta.aceso { color: var(--text); }
+
+  /* Mini animações (cenas) */
+  .cena { position: relative; margin-top: 24px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
+  .cena .item {
+    position: absolute; left: 0; top: 0;
+    padding: 8px 12px; border-radius: 10px; font: 500 14px/20px "Geist Mono", monospace;
+    background: var(--surface-2); border: 1px solid var(--line); white-space: nowrap;
+    transition: transform 600ms var(--curva), opacity 600ms var(--curva), border-color 300ms var(--curva), color 300ms var(--curva), background-color 300ms var(--curva);
+  }
+  .cena .item.ok { border-color: var(--lista); background: var(--lista-a); }
+  .cena .item.erro { border-color: var(--erro); background: var(--erro-a); color: var(--erro); }
+  .cena .item.foco { border-color: var(--text); }
+  .cena .legenda { position: absolute; left: 16px; bottom: 12px; font-size: 14px; line-height: 20px; color: var(--muted); transition: opacity 300ms var(--curva); }
+  .cena .legenda.erro { color: var(--erro); }
+  .cena-fila { height: 128px; } .cena-fila .item { border-color: rgba(124,196,250,.5); }
+  .cena-pilha .legenda { top: 12px; bottom: auto; }
+  .cena-pilha { height: 248px; width: 320px; } .cena-pilha .item { border-color: rgba(245,185,113,.5); width: 288px; }
+  .cena-agenda { height: 232px; } .cena-agenda .item { border-color: rgba(195,166,247,.5); }
+  .cena-lista { height: 112px; } .cena-lista .item { font-size: 12px; line-height: 16px; }
+  .cena-lista .item.no-lista { border-color: rgba(139,211,160,.5); }
+  .cena-lista .item.nulo { background: transparent; border-color: transparent; color: var(--muted); }
+  .cena .pausa {
+    position: absolute; right: 8px; bottom: 8px; z-index: 2; width: 32px; height: 32px; border-radius: 8px;
+    display: grid; place-items: center; cursor: pointer; font-size: 16px;
+    background: var(--surface-2); color: var(--muted); border: 1px solid var(--line);
+    transition: color 300ms var(--curva), background-color 300ms var(--curva);
+  }
+  .cena .pausa:hover { color: var(--text); background: #313131; }
+  .cena-pilha .pausa { bottom: auto; top: 8px; }
+  .cena .fixo { position: absolute; font: 500 12px/16px "Geist Mono", monospace; color: var(--muted); }
+
+  /* Navegação */
+  nav.barra-nav {
+    position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 10;
+    display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 16px;
+    background: rgba(31, 31, 31, .72); border: 1px solid var(--line);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    color: var(--muted); font-size: 14px; line-height: 20px;
+  }
+  nav.barra-nav button.seta-nav {
+    background: var(--surface-2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 10px; width: 40px; height: 40px; font-size: 18px; cursor: pointer; display: grid; place-items: center;
+    transition: background-color 300ms var(--curva), transform 300ms var(--curva);
+  }
+  nav.barra-nav button.seta-nav:hover { background: #313131; }
+  nav.barra-nav button.seta-nav:active { transform: scale(0.98); }
+  .pontos { display: flex; gap: 4px; }
+  .pontos button {
+    width: 8px; height: 8px; border-radius: 4px; border: 0; padding: 0; cursor: pointer; background: var(--line);
+    transition: background-color 300ms var(--curva), transform 300ms var(--curva);
+  }
+  .pontos button:hover { background: var(--muted); }
+  .pontos button[aria-current="step"] { background: var(--cor-slide, var(--text)); transform: scale(1.5); }
+  #contador { font-family: "Geist Mono", monospace; min-width: 56px; text-align: center; }
+  .barra { position: fixed; left: 0; top: 0; height: 2px; width: 100%; background: var(--cor-slide, var(--lifo)); transform-origin: left; transition: transform 500ms var(--curva), background-color 500ms var(--curva); z-index: 10; }
+  .atalhos { position: fixed; right: 24px; bottom: 32px; font-size: 12px; line-height: 16px; color: var(--muted); display: flex; gap: 12px; align-items: center; }
+
+  /* Visão geral (tecla O) */
+  .visao {
+    position: fixed; inset: 0; z-index: 30; padding: 64px max(32px, calc((100vw - 1200px) / 2));
+    background: rgba(24, 24, 24, .92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-content: center;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity 300ms var(--curva), visibility 0s linear 300ms;
+  }
+  .visao.aberta { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 300ms var(--curva); }
+  .visao button {
+    text-align: left; padding: 16px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); color: var(--text);
+    font: 500 16px/24px "Geist", sans-serif; cursor: pointer;
+    transform: translateY(24px); opacity: 0; transition: transform 500ms var(--curva), opacity 500ms var(--curva), border-color 300ms var(--curva);
+    transition-delay: calc(var(--i, 0) * 30ms);
+  }
+  .visao.aberta button { transform: none; opacity: 1; }
+  .visao button:hover, .visao button[aria-current="true"] { border-color: var(--text); }
+  .visao button small { display: block; color: var(--muted); font: 500 12px/16px "Geist Mono", monospace; margin-bottom: 4px; }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; font-size: 16px; line-height: 24px; }
+    .slide { position: relative; visibility: visible; pointer-events: auto; padding: 48px 16px; min-height: 100vh; border-bottom: 1px solid var(--line); }
+    .slide > *, .slide .grade > * { transition-delay: 0ms; }
+    h1 { font-size: 36px; line-height: 40px; } h2 { font-size: 30px; line-height: 36px; }
+    .g2, .g3, .g4 { grid-template-columns: 1fr; }
+    nav.barra-nav, .barra, .atalhos, .visao { display: none; }
+    .cena-pilha { width: 100%; }
+    .cena-pilha .item { width: calc(100% - 32px); }
+    pre { font-size: 12px; line-height: 20px; padding: 16px; }
+  }

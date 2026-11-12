@@ -471,3 +471,17 @@ voltar um passo, o espaço para passar para a próxima parte (já rodando), o Ba
 **Validação:** `node testes/teste_simulador.mjs` (38 de 38), `verificar-site.mjs` em 1440 px e 390 px
 e uso no navegador (voltar e avançar com as setas, espaço entre as partes, depósito e processamento
 no modo manual).
+
+## Iteração 16 · 2026-11-12 · Slides de conclusão separados
+
+**Pedido:** tirar os slides 11 a 14 (demonstração, testes, uso de IA e encerramento) da apresentação
+principal e abri-los a partir do simulador com a tecla **.** (ponto).
+
+**Alterações:**
+- `slides/final.html`: nova página só com os quatro slides de conclusão, usando a mesma navegação
+  (`js/slides.js`): setas, **O** para a visão geral e **S** para voltar ao simulador.
+- `slides/index.html`: fica com os slides 1 a 10. O estilo dos slides saiu do `<style>` da página para
+  `slides/css/slides.css`, compartilhado pelas duas páginas.
+- `slides/js/simulador.js` e `slides/simulador.html`: a tecla **.** abre `final.html` (fora do modo
+  filme e quando não se está digitando num campo); a dica de atalhos mostra a tecla nova.
+- `ferramentas/verificar-site.mjs` confere 10 slides na apresentação e 4 na conclusão; o README cita o atalho.

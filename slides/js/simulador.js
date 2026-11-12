@@ -657,11 +657,13 @@
       velocidade = Number(b.dataset.vel);
       document.querySelectorAll('[data-vel]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
     }));
-    /* Atalhos: → avança um passo, ← volta um passo, espaço passa para a próxima parte */
+    /* Atalhos: → avança um passo, ← volta um passo, espaço passa para a próxima parte,
+     * ponto (.) abre os slides de conclusão */
     const digitando = e => e.target.closest('input, textarea, select') || e.altKey || e.ctrlKey || e.metaKey;
     document.addEventListener('keydown', e => {
       if (digitando(e)) return;
-      if ((e.key === 'n' || e.key === 'ArrowRight') && liberar) { e.preventDefault(); liberar(); }
+      if (e.key === '.' && !FILME) { e.preventDefault(); location.href = 'final.html'; }
+      else if ((e.key === 'n' || e.key === 'ArrowRight') && liberar) { e.preventDefault(); liberar(); }
       else if (e.key === 'ArrowLeft' && pos > 0) { e.preventDefault(); voltar(); }
       else if (e.key === ' ' && !FILME && !emManual()) { e.preventDefault(); trocarParte(1); }
       else if (e.key === 'Backspace' && !FILME && !emManual()) { e.preventDefault(); trocarParte(-1); }
