@@ -437,3 +437,35 @@ Na segunda, sobre a versão final, nenhum problema encontrado.
 
 **Validação:** `node testes/teste_simulador.mjs` (38 de 38), `verificar-site.mjs` em 1440 px e 390 px
 e uso manual no navegador das quatro partes, de Detalhes técnicos e do modo filme.
+
+---
+
+## Iteração 15 · 2026-11-12 · Modo manual, atalhos de teclado e modo claro
+
+**Pedido:** um botão para operar o simulador manualmente durante a apresentação, a seta ← para
+voltar um passo, o espaço para passar para a próxima parte (já rodando), o Backspace para voltar e um modo claro.
+
+**Alterações (`slides/simulador.html`, `slides/js/simulador.js`):**
+- Botão **Modo manual**: mostra todas as estruturas juntas e um painel com as ações do menu do
+  banco.exe (pedido com tipo, contas e valor; processar o próximo ou todos; estornar; agendar com
+  conta, valor e data; cancelar um agendado escolhido na lista; avançar a data). As datas sugeridas
+  partem do "hoje" do banco. Clicar de novo no botão volta para as partes.
+- **← volta um passo** (também pelo botão ao lado de Próximo passo): todos os passos da rodada ficam
+  guardados e cada um traz a foto do estado, então voltar só redesenha a foto anterior; as linhas do
+  terminal daquele passo em diante são apagadas e reaparecem ao avançar de novo.
+- **Espaço** passa para a próxima parte (Fila → Pilha → Agenda → Vetor → Fila) e **Backspace** volta
+  para a anterior, sem acionar o botão em foco. Depois do primeiro clique em **Rodar**, a parte nova
+  já começa a rodar sozinha.
+- Parte **Pilha** refeita a pedido: em vez de começar com a pilha pronta, mostra os dois saques da
+  Carla e a transferência da Ana entrando na fila, cada operação efetivada subindo para o topo e a
+  recusa do saque sem saldo; depois, os estornos (12 passos). A fila aparece junto nessa parte.
+- Botão **Modo claro** na barra de cima, lembrado neste navegador (`localStorage`, com proteção para
+  quando não houver armazenamento). Os tokens do tema claro ficam em `slides/css/base.css`, sob
+  `html[data-tema="claro"]`; código C e terminal continuam escuros, com as cores originais. O filme é sempre escuro.
+- Painel do código C, terminal e modo filme sem mudanças.
+
+**Revisão com o Codex** (`codex review --uncommitted`): nenhum problema encontrado.
+
+**Validação:** `node testes/teste_simulador.mjs` (38 de 38), `verificar-site.mjs` em 1440 px e 390 px
+e uso no navegador (voltar e avançar com as setas, espaço entre as partes, depósito e processamento
+no modo manual).

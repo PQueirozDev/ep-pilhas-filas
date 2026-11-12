@@ -20,6 +20,29 @@
   --dur: 500ms;
   color-scheme: dark;
 }
+/* Modo claro (ligado pelo botão do simulador) */
+html[data-tema="claro"] {
+  --bg: #F6F6F3;
+  --surface: #FFFFFF;
+  --surface-2: #EFEFEB;
+  --line: #DDDDD7;
+  --text: #1A1A1A;
+  --muted: #66665F;
+  --fifo: #1C74B5;
+  --lifo: #A85F0A;
+  --agenda: #6E45C4;
+  --lista: #1F7D44;
+  --erro: #BF323A;
+  --fifo-a: rgba(28, 116, 181, .12);
+  --lifo-a: rgba(168, 95, 10, .12);
+  --agenda-a: rgba(110, 69, 196, .12);
+  --lista-a: rgba(31, 125, 68, .12);
+  --erro-a: rgba(191, 50, 58, .12);
+  color-scheme: light;
+}
+html[data-tema="claro"] .botao:hover { background: #E6E6E1; }
+html[data-tema="claro"] .botao.primario { color: #FFFFFF; }
+html[data-tema="claro"] .botao.primario:hover { background: #000000; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-text-size-adjust: 100%; }
 body {

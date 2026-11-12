@@ -1297,13 +1297,13 @@
     },
     pilha: {
       nome: 'Pilha',
-      intro: 'Já aconteceram duas operações: o saque de R$ 40 da Carla e, depois, a transferência de R$ 150 da Ana para o Bruno. As duas estão na pilha. Cada estorno desfaz a de cima, a mais recente.',
-      preparo: [
-        { titulo: 'Opção 2: Carla pede saque de R$ 40', run: b => b.solicitarOperacao(TIPO_SAQUE, 3, 0, 40) },
-        { titulo: 'Opção 3: Ana transfere R$ 150 para Bruno', run: b => b.solicitarOperacao(TIPO_TRANSFERENCIA, 1, 2, 150) },
-        { titulo: 'Opção 6: processar a fila inteira', run: b => b.processarTodos() }
-      ],
+      intro: 'Carla pede dois saques (R$ 40 e R$ 30) e Ana transfere R$ 150 para Bruno. Cada operação que der certo sobe para o topo da pilha. Depois, cada estorno desfaz a de cima, a mais recente.',
+      preparo: [],
       comandos: [
+        { titulo: 'Opção 2: Carla pede saque de R$ 40', run: b => b.solicitarOperacao(TIPO_SAQUE, 3, 0, 40) },
+        { titulo: 'Opção 2: Carla pede outro saque, de R$ 30', run: b => b.solicitarOperacao(TIPO_SAQUE, 3, 0, 30) },
+        { titulo: 'Opção 3: Ana transfere R$ 150 para Bruno', run: b => b.solicitarOperacao(TIPO_TRANSFERENCIA, 1, 2, 150) },
+        { titulo: 'Opção 6: processar a fila inteira', run: b => b.processarTodos() },
         { titulo: 'Opção 7: estornar o topo da pilha', run: b => b.estornar() },
         { titulo: 'Opção 7: estornar o novo topo', run: b => b.estornar() },
         { titulo: 'Opção 7: estornar com a pilha vazia', run: b => b.estornar() }

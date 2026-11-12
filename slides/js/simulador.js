@@ -27,7 +27,6 @@
 
   let banco = new B.Banco();
   let velocidade = 1;
-  const filaPassos = [];                        /* passos esperando para aparecer */
   let tocando = false, pulando = false, liberar = null, timer = null;
   const elementos = new Map();                  /* chave -> elemento (fichas e registros) */
   let fnAtual = null, hojeAtual = null;
@@ -306,41 +305,66 @@
     if (/\[EFETIVADA\]/.test(l)) return 'ok';
     return '';
   }
-  function escrever(texto, classe) {
+  /* "passo" marca de qual passo veio a linha, para apagá-la ao voltar */
+  function escrever(texto, classe, passo) {
     const term = $('terminal'), d = document.createElement('div');
     d.className = (pulando ? '' : 'ent ') + classe;
+    if (passo !== undefined) d.dataset.passo = passo;
     d.textContent = texto;
     term.appendChild(d);
     term.scrollTop = term.scrollHeight;
   }
 
   /* ---------------- Tocador de passos ---------------- */
-  /* Usado pelo filme e pelo roteiro completo: cada comando conta os próprios passos */
+  /* Todos os passos da rodada ficam em "roteiro" e "pos" é o que está na tela.
+   * Como cada passo traz a foto do estado, voltar (←) é só redesenhar a foto
+   * anterior; o motor não é executado de novo. "sessao" muda a cada reinício,
+   * para um tocador antigo que ainda estava esperando simplesmente parar. */
+  const roteiro = [];
+  let pos = -1, sessao = 0;
+
+  /* Usado pelo filme, pelo roteiro completo e pelo modo manual: cada comando conta os próprios passos */
   function enfileirar(titulo, passos) {
-    passos.forEach((p, i) => filaPassos.push({ ...p, titulo, i, total: passos.length, novoComando: i === 0 }));
+    passos.forEach((p, i) => roteiro.push({ ...p, titulo, i, total: passos.length, novoComando: i === 0 }));
   }
 
-  async function tocar() {
+  /* esperarAntes: o passo atual já está na tela (ao voltar), então espera antes de avançar */
+  async function tocar(esperarAntes) {
     if (tocando) return;
     tocando = true;
+    const minha = sessao;
     atualizarBotoes();
-    while (filaPassos.length) {
-      const p = filaPassos.shift();
-      mostrar(p);
-      if (filaPassos.length) await aguardar(p);
+    let esperar = esperarAntes === true;
+    while (pos < roteiro.length - 1) {
+      if (esperar) {
+        await aguardar(roteiro[pos]);
+        if (minha !== sessao) return;
+      }
+      esperar = true;
+      pos++;
+      mostrar(roteiro[pos], pos);
     }
     tocando = false;
     pulando = false;
     atualizarBotoes();
   }
 
-  function mostrar(p) {
-    if (p.novoComando) escrever(p.titulo, 'cmd');
+  function voltar() {
+    if (pos <= 0 || pulando) return;
+    pos--;
+    mostrar(roteiro[pos], pos);
+    if (tocando) atualizarBotoes();
+    else tocar(true);
+  }
+
+  function mostrar(p, k) {
+    $('terminal').querySelectorAll('[data-passo]').forEach(d => { if (Number(d.dataset.passo) >= k) d.remove(); });
+    if (p.novoComando) escrever(p.titulo, 'cmd', k);
     desenhar(p.foto, true);
     focar(p);
     mostrarCodigo(p.fn, p.linha, p.tom);
     narrar(p);
-    p.log.forEach(l => escrever(l.replace(/^ {2}/, ''), classeLog(l)));
+    p.log.forEach(l => escrever(l.replace(/^ {2}/, ''), classeLog(l), k));
     passoAtual = p;
     mostrarBalao(p);
   }
@@ -359,12 +383,18 @@
 
   function atualizarBotoes() {
     $('proximoPasso').disabled = !liberar;
+    $('passoAnterior').disabled = pos <= 0 || pulando;
     $('pularTudo').disabled = !tocando;
   }
 
   function reiniciar() {
-    filaPassos.length = 0;
+    roteiro.length = 0;
+    pos = -1;
+    sessao++;
+    tocando = false;
+    pulando = false;
     if (liberar) liberar();
+    atualizarBotoes();
     esconderBalao();
     banco = new B.Banco();
     elementos.forEach(el => el.remove());
@@ -397,7 +427,9 @@
    * (ex.: o registro no histórico, que só aparece na parte do vetor). */
   const MOSTRAR_PASSO = {
     fila: p => p.fn !== 'registrarHistorico' && p.fn !== 'empilhar' && !(p.fn === 'solicitarOperacao' && p.tom !== 'erro'),
-    pilha: p => p.fn !== 'registrarHistorico',
+    /* Pilha: o pedido entrando na fila, a operação subindo para o topo, a recusa e os estornos */
+    pilha: p => ['enfileirar', 'empilhar', 'desempilhar', 'desfazerOperacao', 'estornar'].includes(p.fn) ||
+      (p.fn === 'aplicarOperacao' && p.tom === 'erro'),
     agenda: p => p.fn !== 'registrarHistorico',
     vetor: p => p.fn === 'registrarHistorico'
   };
@@ -426,6 +458,7 @@
 
   /* Volta a parte ao ponto de partida: banco novo + preparo em silêncio */
   function prepararParte(nome) {
+    ultimaParte = nome;
     escolherParte(nome);
     reiniciar();
     const parte = B.PARTES[nome];
@@ -440,24 +473,177 @@
     $('narTexto').textContent = parte.intro;
   }
 
+  /* Espaço (+1) e Backspace (-1) trocam de parte. Depois do primeiro Rodar,
+   * a parte nova já começa a rodar sozinha. */
+  let jaRodou = false;
+  function trocarParte(direcao) {
+    const ordem = Object.keys(B.PARTES);
+    const i = Math.max(0, ordem.indexOf(parteAtual));
+    const nome = ordem[(i + direcao + ordem.length) % ordem.length];
+    prepararParte(nome);
+    if (jaRodou) rodarParte();
+  }
+
   function rodarParte() {
+    jaRodou = true;
     if (!parteAtual) { rodarRoteiro('demo'); return; }
     prepararParte(parteAtual);
     const passos = B.PARTES[parteAtual].comandos.flatMap(c =>
       resumir(c.run(banco), MOSTRAR_PASSO[parteAtual]).map((p, i) => ({ ...p, titulo: c.titulo, novoComando: i === 0 })));
-    passos.forEach((p, i) => filaPassos.push({ ...p, i, total: passos.length }));
+    passos.forEach((p, i) => roteiro.push({ ...p, i, total: passos.length }));
     tocar();
+  }
+
+  /* ---------------- Modo manual ---------------- */
+  /* Todas as estruturas na tela e um painel com as ações do menu do banco.exe.
+   * Os valores digitados vão direto para o motor, que faz as mesmas validações do C. */
+  let ultimaParte = 'fila', tipo = B.TIPO_DEPOSITO;
+  const emManual = () => document.documentElement.dataset.modo === 'manual';
+  function somarDias(data, n) {
+    const d = new Date(Math.floor(data / 10000), Math.floor(data / 100) % 100 - 1, data % 100 + n);
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  }
+  const paraCampo = d => String(Math.floor(d / 10000)).padStart(4, '0') + '-' +
+    String(Math.floor(d / 100) % 100).padStart(2, '0') + '-' + String(d % 100).padStart(2, '0');
+  function deCampo(input) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input.value);
+    return m ? Number(m[1] + m[2] + m[3]) : null;
+  }
+  function avisar(input, msg) {
+    const aviso = $(input.getAttribute('aria-describedby'));
+    if (aviso) aviso.textContent = msg || '';
+    if (msg) { input.setAttribute('aria-invalid', 'true'); input.focus(); }
+    else input.removeAttribute('aria-invalid');
+  }
+  /* Aceita 150, 150.50 ou 150,50; o motor recusa zero, negativos e valores acima do limite */
+  function lerValor(input) {
+    const t = input.value.trim().replace(',', '.');
+    avisar(input, '');
+    if (!/^[+-]?(\d+(\.\d*)?|\.\d+)$/.test(t)) { avisar(input, 'Digite um valor, como 40 ou 40,50.'); return null; }
+    return Number(t);
+  }
+  function lerData(input) {
+    avisar(input, '');
+    const d = deCampo(input);
+    if (!d) { avisar(input, 'Escolha uma data.'); return null; }
+    return d;
+  }
+
+  function escolherTipo(t) {
+    tipo = t;
+    document.querySelectorAll('.tipos button').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.tipo) === t)));
+    $('campoOrigem').hidden = t === B.TIPO_DEPOSITO;
+    $('campoDestino').hidden = !(t === B.TIPO_DEPOSITO || t === B.TIPO_TRANSFERENCIA);
+  }
+
+  /* Depois de cada ação: lista de agendados para cancelar e datas sugeridas a partir de hoje */
+  function atualizarManual() {
+    $('cancNum').innerHTML = banco.agenda.length
+      ? banco.agenda.map(op => '<option value="' + op.numero + '">#' + op.numero + ' · ' + B.reais(op.valor) + ' · ' + dataCurta(op.data) + '</option>').join('')
+      : '<option value="">nenhum</option>';
+    $('botaoCancelar').disabled = !banco.agenda.length;
+    [['agData', 3], ['novaData', 1]].forEach(([id, dias]) => {
+      const campo = $(id), atual = deCampo(campo);
+      campo.min = paraCampo(somarDias(banco.hoje, 1));
+      if (!atual || atual <= banco.hoje) campo.value = paraCampo(somarDias(banco.hoje, dias));
+    });
+  }
+
+  function iniciarManual() {
+    reiniciar();
+    $('narCmd').textContent = 'Modo manual';
+    $('narTexto').textContent = 'Faça pedidos, processe, estorne e agende usando o painel acima das estruturas. Cada ação aparece em passos: clique em Próximo passo para avançar.';
+    atualizarManual();
+  }
+
+  function ativarManual(ligado) {
+    $('modoManual').setAttribute('aria-pressed', String(ligado));
+    $('manual').hidden = !ligado;
+    $('abas').hidden = ligado;
+    $('rodarDemo').hidden = ligado;
+    if (ligado) {
+      document.documentElement.dataset.modo = 'manual';
+      escolherParte(null);
+      iniciarManual();
+    } else {
+      delete document.documentElement.dataset.modo;
+      prepararParte(ultimaParte);
+    }
+  }
+
+  function executar(titulo, passos) {
+    enfileirar(titulo, passos);
+    atualizarManual();
+    tocar();
+  }
+
+  function ligarManual() {
+    const opcoes = banco.contas.map(c => '<option value="' + c.numero + '">' + c.titular + '</option>').join('');
+    ['origem', 'destino', 'agConta'].forEach(id => { $(id).innerHTML = opcoes; });
+    $('destino').value = '3';
+    escolherTipo(B.TIPO_DEPOSITO);
+    document.querySelectorAll('.tipos button').forEach(b => b.addEventListener('click', () => escolherTipo(Number(b.dataset.tipo))));
+
+    $('formPedido').addEventListener('submit', e => {
+      e.preventDefault();
+      const valor = lerValor($('valor'));
+      if (valor === null) return;
+      const o = $('campoOrigem').hidden ? 0 : Number($('origem').value);
+      const d = $('campoDestino').hidden ? 0 : Number($('destino').value);
+      const nome = n => banco.buscarConta(n).titular;
+      let alvo = ' para ' + nome(d);
+      if (tipo === B.TIPO_TRANSFERENCIA) alvo = ' de ' + nome(o) + ' para ' + nome(d);
+      else if (tipo !== B.TIPO_DEPOSITO) alvo = ' de ' + nome(o);
+      executar('Opção ' + tipo + ': ' + B.NOME_CURTO[tipo].toLowerCase() + ' de R$ ' + $('valor').value.trim() + alvo,
+        banco.solicitarOperacao(tipo, o, d, valor));
+    });
+    $('processar').addEventListener('click', () => {
+      const P = [];
+      banco.processarProximo(P);
+      executar('Opção 5: processar o próximo da fila', P);
+    });
+    $('processarTodos').addEventListener('click', () => executar('Opção 6: processar a fila inteira', banco.processarTodos()));
+    $('estornar').addEventListener('click', () => executar('Opção 7: estornar o topo da pilha', banco.estornar()));
+    $('formAgendar').addEventListener('submit', e => {
+      e.preventDefault();
+      const valor = lerValor($('agValor'));
+      if (valor === null) return;
+      const data = lerData($('agData'));
+      if (data === null) return;
+      const conta = Number($('agConta').value);
+      executar('Opção 8: ' + banco.buscarConta(conta).titular + ' agenda R$ ' + $('agValor').value.trim() + ' para ' + dataCurta(data),
+        banco.agendarPagamento(conta, valor, data));
+    });
+    $('formCancelar').addEventListener('submit', e => {
+      e.preventDefault();
+      const n = Number($('cancNum').value);
+      if (!n) return;
+      executar('Opção 9: cancelar o agendado #' + n, banco.cancelarAgendamento(n));
+    });
+    $('formAvancar').addEventListener('submit', e => {
+      e.preventDefault();
+      const data = deCampo($('novaData'));
+      if (!data) return;
+      executar('Opção 10: avançar a data para ' + dataCurta(data), banco.avancarData(data));
+    });
+    $('modoManual').addEventListener('click', () => ativarManual(!emManual()));
   }
 
   /* ---------------- Controles ---------------- */
   function ligar() {
     document.querySelectorAll('.abas [data-parte]').forEach(b => b.addEventListener('click', () => prepararParte(b.dataset.parte)));
     $('rodarDemo').addEventListener('click', rodarParte);
-    $('reiniciar').addEventListener('click', () => (parteAtual ? prepararParte(parteAtual) : reiniciar()));
+    $('reiniciar').addEventListener('click', () => {
+      if (emManual()) iniciarManual();
+      else if (parteAtual) prepararParte(parteAtual);
+      else reiniciar();
+    });
+    ligarManual();
     $('limparTerminal').addEventListener('click', () => { $('terminal').textContent = ''; });
 
     $('proximoPasso').addEventListener('click', () => { if (liberar) liberar(); });
     $('pularTudo').addEventListener('click', () => { pulando = true; if (liberar) liberar(); });
+    $('passoAnterior').addEventListener('click', voltar);
     $('autoPlay').addEventListener('change', e => {
       $('velocidades').hidden = !e.target.checked;
       if (!e.target.checked) { clearTimeout(timer); timer = null; }
@@ -472,11 +658,36 @@
       velocidade = Number(b.dataset.vel);
       document.querySelectorAll('[data-vel]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
     }));
+    /* Atalhos: → avança um passo, ← volta um passo, espaço passa para a próxima parte */
+    const digitando = e => e.target.closest('input, textarea, select') || e.altKey || e.ctrlKey || e.metaKey;
     document.addEventListener('keydown', e => {
-      if (e.target.closest('input, textarea, select')) return;
+      if (digitando(e)) return;
       if ((e.key === 'n' || e.key === 'ArrowRight') && liberar) { e.preventDefault(); liberar(); }
+      else if (e.key === 'ArrowLeft' && pos > 0) { e.preventDefault(); voltar(); }
+      else if (e.key === ' ' && !FILME && !emManual()) { e.preventDefault(); trocarParte(1); }
+      else if (e.key === 'Backspace' && !FILME && !emManual()) { e.preventDefault(); trocarParte(-1); }
+    });
+    /* O espaço não deve "clicar" no botão que estiver em foco (ex.: Rodar) */
+    document.addEventListener('keyup', e => {
+      if (e.key === ' ' && !digitando(e) && !emManual()) e.preventDefault();
     });
     window.addEventListener('resize', posicionarBalao);
+
+    /* Modo claro / escuro, lembrado neste navegador */
+    const raizHtml = document.documentElement;
+    const mostrarTema = () => {
+      const claro = raizHtml.dataset.tema === 'claro';
+      $('botaoTema').setAttribute('aria-pressed', String(claro));
+      $('botaoTema').querySelector('i').className = 'ph ' + (claro ? 'ph-moon' : 'ph-sun');
+      $('botaoTema').querySelector('span').textContent = claro ? 'Modo escuro' : 'Modo claro';
+    };
+    $('botaoTema').addEventListener('click', () => {
+      if (raizHtml.dataset.tema === 'claro') delete raizHtml.dataset.tema;
+      else raizHtml.dataset.tema = 'claro';
+      try { localStorage.setItem('ep-tema', raizHtml.dataset.tema || 'escuro'); } catch (e) { /* sem armazenamento: vale só nesta visita */ }
+      mostrarTema();
+    });
+    mostrarTema();
   }
 
   ligar();
