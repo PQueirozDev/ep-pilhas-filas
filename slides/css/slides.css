@@ -34,17 +34,6 @@
   .cartao p { color: var(--muted); font-size: 16px; line-height: 24px; }
   .marca { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; }
 
-  pre {
-    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
-    padding: 24px; font-size: 14px; line-height: 24px; overflow: auto; color: #D8D8D8;
-  }
-  pre .c { color: #767676; }
-  pre .k { color: var(--fifo); }
-  pre .p { color: var(--lifo); }
-  pre .v { color: var(--lista); }
-  pre .e { color: var(--erro); }
-  pre .a { color: var(--agenda); }
-
   ul.lista { list-style: none; display: grid; gap: 12px; }
   ul.lista li { padding-left: 24px; position: relative; }
   ul.lista li::before { content: ""; position: absolute; left: 0; top: 10px; width: 8px; height: 8px; border-radius: 2px; background: var(--muted); }
@@ -153,7 +142,6 @@
     nav.barra-nav, .barra, .atalhos, .visao { display: none; }
     .cena-pilha { width: 100%; }
     .cena-pilha .item { width: calc(100% - 32px); }
-    pre { font-size: 12px; line-height: 20px; padding: 16px; }
     ul.lista.grande { font-size: 22px; line-height: 30px; }
     ul.lista.grande li::before { top: 10px; }
   }

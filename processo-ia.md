@@ -566,3 +566,12 @@ tem mais uso. Nenhuma caixa do simulador traz texto explicativo.
 **Alterações (`slides/index.html`):** os slides Fila, Pilha, Estado global, Agenda e Histórico perdem o
 bloco de código C. O texto e as animações ocupam o slide sozinhos, numa coluna de até 760 px. A saída
 do banco.exe no slide de demonstração (`slides/final.html`) continua.
+
+## Iteração 27 · 2026-11-12 · Conclusão só com qualidade e uso de IA
+
+**Pedido:** deixar na conclusão só os slides de qualidade e de uso de IA.
+
+**Alterações:** `slides/final.html` perde os slides Demonstração (saída do banco.exe) e Encerramento e
+fica com 2 slides. Os estilos de bloco de código (`pre`) saíram de `slides/css/slides.css`, porque
+nenhum slide os usa mais. `ferramentas/verificar-site.mjs` confere 2 slides na conclusão e o README
+foi ajustado.
