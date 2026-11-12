@@ -40,33 +40,7 @@
   </div>
 </section>
 
-<!-- 3. Visão geral -->
-<section class="slide" aria-label="Visão geral">
-  <p class="rotulo">Visão geral</p>
-  <h2 class="gradiente">O caminho de cada operação</h2>
-  <div class="fluxo" style="margin-bottom:32px">
-    <div class="no"><b>Cliente pede</b><small>depósito, saque, transf., pagamento</small></div>
-    <span class="seta">→</span>
-    <div class="no" style="--cor:var(--fifo)"><b>FILA</b><small>espera na ordem de chegada</small></div>
-    <span class="seta">→</span>
-    <div class="no"><b>Tem saldo?</b><small>processar o 1º da fila</small></div>
-    <span class="seta">→</span>
-    <div class="no" style="--cor:var(--lifo)"><b>PILHA</b><small>efetivadas, para estorno</small></div>
-    <span class="seta">→</span>
-    <div class="no" style="--cor:var(--lista)"><b>HISTÓRICO</b><small>vetor de registros</small></div>
-  </div>
-  <div class="fluxo">
-    <div class="no"><b>Cliente agenda</b><small>pagamento com data futura</small></div>
-    <span class="seta">→</span>
-    <div class="no" style="--cor:var(--agenda)"><b>AGENDA</b><small>ordenada por inserção</small></div>
-    <span class="seta">→</span>
-    <div class="no"><b>Data chega</b><small>executa os vencidos</small></div>
-    <span class="seta">→</span>
-    <div class="no" style="--cor:var(--lista)"><b>HISTÓRICO</b><small>agendado não entra na pilha</small></div>
-  </div>
-</section>
-
-<!-- 4. Objetivo -->
+<!-- 3. Objetivo -->
 <section class="slide" aria-label="Objetivo">
   <p class="rotulo">Objetivo</p>
   <h2 class="gradiente">Estruturas que usamos no EP</h2>
@@ -78,7 +52,7 @@
   </div>
 </section>
 
-<!-- 5. Fila -->
+<!-- 4. Fila -->
 <section class="slide" aria-label="Fila FIFO" data-cor="var(--fifo)">
   <p class="rotulo" style="color:var(--fifo)">Fila · FIFO</p>
   <div class="grade g2" style="align-items:center">
@@ -99,7 +73,7 @@
   </div>
 </section>
 
-<!-- 6. Pilha -->
+<!-- 5. Pilha -->
 <section class="slide" aria-label="Pilha LIFO" data-cor="var(--lifo)">
   <p class="rotulo" style="color:var(--lifo)">Pilha · LIFO</p>
   <div class="grade g2" style="align-items:center">
@@ -119,7 +93,7 @@
   </div>
 </section>
 
-<!-- 7. Estado global -->
+<!-- 6. Estado global -->
 <section class="slide" aria-label="Estado global e retorno por valor">
   <p class="rotulo">Como as funções trabalham</p>
   <div class="grade g2" style="align-items:center">
@@ -140,7 +114,7 @@ if (desfeita.numero != 0) {
   </div>
 </section>
 
-<!-- 8. Agenda -->
+<!-- 7. Agenda -->
 <section class="slide" aria-label="Agenda por inserção" data-cor="var(--agenda)">
   <p class="rotulo" style="color:var(--agenda)">Agenda · inserção</p>
   <div class="grade g2" style="align-items:center">
@@ -162,7 +136,7 @@ if (desfeita.numero != 0) {
   </div>
 </section>
 
-<!-- 9. Histórico -->
+<!-- 8. Histórico -->
 <section class="slide" aria-label="Histórico em vetor de registros" data-cor="var(--lista)">
   <p class="rotulo" style="color:var(--lista)">Histórico · vetor</p>
   <div class="grade g2" style="align-items:center">
@@ -184,7 +158,7 @@ if (desfeita.numero != 0) {
   </div>
 </section>
 
-<!-- 10. Casos extremos -->
+<!-- 9. Casos extremos -->
 <section class="slide" aria-label="Casos extremos" data-cor="var(--erro)">
   <p class="rotulo">Casos extremos</p>
   <h2 class="gradiente">O que poderia dar errado, e o que o sistema faz</h2>
@@ -206,7 +180,7 @@ if (desfeita.numero != 0) {
 <nav class="barra-nav" aria-label="Navegação dos slides">
   <button class="seta-nav" id="anterior" aria-label="Slide anterior"><i class="ph ph-arrow-left" aria-hidden="true"></i></button>
   <div class="pontos" id="pontos"></div>
-  <span id="contador" aria-live="polite">1 / 10</span>
+  <span id="contador" aria-live="polite">1 / 9</span>
   <button class="seta-nav" id="proximo" aria-label="Próximo slide"><i class="ph ph-arrow-right" aria-hidden="true"></i></button>
 </nav>
 <p class="atalhos" aria-hidden="true"><span><kbd>O</kbd> visão geral</span><span><kbd>S</kbd> simulador</span></p>

@@ -500,3 +500,11 @@ liste só as estruturas usadas no EP.
 
 **Alterações (`slides/index.html`):** o slide 4 passa a se chamar **Objetivo**, com o título
 "Estruturas que usamos no EP" e quatro cartões: Fila, Pilha, Agenda e Vetor, cada um com a cor da sua estrutura.
+
+## Iteração 19 · 2026-11-12 · Sem o slide de visão geral
+
+**Pedido:** tirar o slide "Visão geral" (o fluxo de cada operação).
+
+**Alterações:** a apresentação passa a ter 9 slides. Saíram o slide de `slides/index.html` e os estilos
+do fluxo (`.fluxo`, `.no`, `.seta`) de `slides/css/slides.css`. `ferramentas/verificar-site.mjs`
+confere 9 slides e o roteiro do README cita os slides 1 a 3.
