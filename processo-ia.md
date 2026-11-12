@@ -575,3 +575,12 @@ do banco.exe no slide de demonstração (`slides/final.html`) continua.
 fica com 2 slides. Os estilos de bloco de código (`pre`) saíram de `slides/css/slides.css`, porque
 nenhum slide os usa mais. `ferramentas/verificar-site.mjs` confere 2 slides na conclusão e o README
 foi ajustado.
+
+## Iteração 28 · 2026-11-12 · Sem o slide Casos extremos
+
+**Pedido:** remover o slide 10 (Casos extremos).
+
+**Alterações:** `slides/index.html` perde o slide da tabela de casos extremos e fica com 9 slides. O
+botão **Abrir o simulador**, que estava nele, passa para o slide 9 (Histórico), agora o último antes do
+simulador. Os estilos de tabela saíram de `slides/css/slides.css`, porque nenhum slide os usa mais, e
+`ferramentas/verificar-site.mjs` confere 9 slides.

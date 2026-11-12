@@ -38,11 +38,6 @@
   ul.lista li { padding-left: 24px; position: relative; }
   ul.lista li::before { content: ""; position: absolute; left: 0; top: 10px; width: 8px; height: 8px; border-radius: 2px; background: var(--muted); }
 
-  table { width: 100%; border-collapse: collapse; font-size: 16px; line-height: 24px; }
-  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--muted); font-weight: 500; font-size: 14px; line-height: 20px; }
-  td code { font-size: 14px; color: var(--lifo); }
-
   /* Capa */
   .capa-icone { display: grid; gap: 8px; width: 96px; margin-bottom: 40px; }
   .capa-icone span { height: 16px; border-radius: 4px; transform: translateY(-24px); opacity: 0; transition: transform 600ms var(--curva), opacity 600ms var(--curva); }

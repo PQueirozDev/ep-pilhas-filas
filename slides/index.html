@@ -109,22 +109,6 @@
     <p class="muted">Cada evento ocupa <code>itens[quantidade]</code>. Depois, o contador aumenta. O vetor guarda até 1.000 registros; se não houver espaço, o sistema recusa o comando antes de alterar o banco.</p>
     <div class="cena cena-lista" data-cena="lista" aria-label="Animação: registros ocupando posições do vetor"></div>
   </div>
-</section>
-
-<!-- 10. Casos extremos -->
-<section class="slide" aria-label="Casos extremos" data-cor="var(--erro)">
-  <p class="rotulo">Casos extremos</p>
-  <h2 class="gradiente">O que poderia dar errado, e o que o sistema faz</h2>
-  <table>
-    <tr><th>Situação</th><th>Resposta do sistema</th></tr>
-    <tr><td>Estornar sem nada efetivado</td><td><code>Nada a estornar.</code></td></tr>
-    <tr><td>Saldo insuficiente</td><td>Pedido recusado e registrado no histórico, sem mudar o saldo</td></tr>
-    <tr><td>Dois pagamentos agendados no mesmo dia</td><td>Executam na ordem de entrada (desempate pelo número)</td></tr>
-    <tr><td>Estornar depósito cujo dinheiro já foi gasto</td><td>Estorno recusado. A operação volta ao topo e nada muda</td></tr>
-    <tr><td>Cancelar agendado já executado</td><td>"Não há pagamento agendado com esse número"</td></tr>
-    <tr><td>Conta 0 ou inexistente, valor ≤ 0, <code>nan</code>, mesma conta</td><td>Recusado antes de entrar na fila</td></tr>
-    <tr><td>Letras no lugar de números, data 31/02</td><td>A pergunta é repetida</td></tr>
-  </table>
   <div class="cta"><a class="botao primario" href="simulador.html"><i class="ph ph-play" aria-hidden="true"></i>Abrir o simulador</a></div>
 </section>
 
@@ -134,7 +118,7 @@
 <nav class="barra-nav" aria-label="Navegação dos slides">
   <button class="seta-nav" id="anterior" aria-label="Slide anterior"><i class="ph ph-arrow-left" aria-hidden="true"></i></button>
   <div class="pontos" id="pontos"></div>
-  <span id="contador" aria-live="polite">1 / 10</span>
+  <span id="contador" aria-live="polite">1 / 9</span>
   <button class="seta-nav" id="proximo" aria-label="Próximo slide"><i class="ph ph-arrow-right" aria-hidden="true"></i></button>
 </nav>
 <p class="atalhos" aria-hidden="true"><span><kbd>O</kbd> visão geral</span><span><kbd>S</kbd> simulador</span></p>
