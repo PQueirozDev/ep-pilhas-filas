@@ -185,32 +185,8 @@
   const cenas = new Map();
   document.querySelectorAll('[data-cena]').forEach(el => cenas.set(el, criarCena(el, CENAS[el.dataset.cena])));
 
-  /* Fluxo do slide 3: uma "ficha" percorre os nós */
-  function criarFluxo(slide) {
-    const partes = Array.from(slide.querySelectorAll('[data-fluxo] > *'));
-    const nos = partes.filter(p => p.classList.contains('no'));
-    let k = 0, timer = null;
-    function tique() {
-      partes.forEach(p => p.classList.remove('aceso'));
-      const no = nos[k], seta = no.previousElementSibling;
-      no.classList.add('aceso');
-      if (seta) seta.classList.add('aceso');
-      const fimDaLinha = !no.nextElementSibling;
-      k = (k + 1) % nos.length;
-      timer = setTimeout(tique, fimDaLinha ? 1400 : 700);
-    }
-    return {
-      iniciar() { if (!timer) { k = 0; timer = setTimeout(tique, 600); } },
-      parar() { clearTimeout(timer); timer = null; partes.forEach(p => p.classList.remove('aceso')); }
-    };
-  }
-  const fluxos = new Map();
-  slides.forEach(s => { if (s.querySelector('[data-fluxo]')) fluxos.set(s, criarFluxo(s)); });
-
   function animacoesDe(slide) {
-    const lista = Array.from(slide.querySelectorAll('[data-cena]')).map(el => cenas.get(el));
-    if (fluxos.has(slide)) lista.push(fluxos.get(slide));
-    return lista;
+    return Array.from(slide.querySelectorAll('[data-cena]')).map(el => cenas.get(el));
   }
 
   /* Entrada em cascata: cada bloco recebe seu índice */

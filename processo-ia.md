@@ -485,3 +485,10 @@ principal e abri-los a partir do simulador com a tecla **.** (ponto).
 - `slides/js/simulador.js` e `slides/simulador.html`: a tecla **.** abre `final.html` (fora do modo
   filme e quando não se está digitando num campo); a dica de atalhos mostra a tecla nova.
 - `ferramentas/verificar-site.mjs` confere 10 slides na apresentação e 4 na conclusão; o README cita o atalho.
+
+## Iteração 17 · 2026-11-12 · Visão geral estática
+
+**Pedido:** tirar a animação do slide 3 (Visão geral), em que um destaque percorria os blocos um a um.
+
+**Alterações:** o slide 3 fica estático. Saíram a função `criarFluxo` de `slides/js/slides.js`, os
+atributos `data-fluxo` de `slides/index.html` e os estilos `.aceso` de `slides/css/slides.css`.
