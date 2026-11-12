@@ -83,8 +83,8 @@ Roteiro de 15 minutos: **3 min** de problema, **5 min** de demonstração e **7 
    `6` (processar a fila), `11` (situação), `7` (estorno), `7` de novo (pilha vazia) e `12` (histórico).
    Mostre `enfileirar`/`desenfileirar` em `src/fila.c` e `empilhar`/`desempilhar` em `src/pilha.c`.
    A agenda aparece na demonstração automática ou no [simulador](https://ep-pilhas-filas.vercel.app/simulador.html).
-3. **Conclusão:** no simulador, aperte **.** (ponto) para abrir os slides finais
-   (qualidade e uso de IA).
+3. **Conclusão:** no simulador, aperte **.** (ponto) para abrir o slide final
+   (uso de IA).
 4. **Perguntas:** o código e os testes ficam abertos para consulta.
 
 Sem `gcc` na máquina da apresentação, o `banco.exe` compilado roda em qualquer Windows 10/11 sem instalação.

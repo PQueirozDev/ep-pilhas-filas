@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EP Pilhas e Filas: conclusão</title>
-<meta name="description" content="Slides de conclusão do EP de Algoritmos (Senac, 2026): testes e uso de IA.">
+<meta name="description" content="Slides de conclusão do EP de Algoritmos (Senac, 2026): uso de IA.">
 <meta name="robots" content="noindex">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23181818'/%3E%3Crect x='8' y='8' width='16' height='4' rx='1' fill='%23F5B971'/%3E%3Crect x='8' y='14' width='16' height='4' rx='1' fill='%23F5B971' opacity='.6'/%3E%3Crect x='8' y='20' width='16' height='4' rx='1' fill='%23F5B971' opacity='.3'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,20 +17,7 @@
 <body>
 <main id="slides">
 
-<!-- 1. Testes e organização -->
-<section class="slide" aria-label="Testes e organização" data-cor="var(--lista)">
-  <p class="rotulo">Qualidade</p>
-  <h2 class="gradiente">72 verificações automáticas em 4 programas de teste</h2>
-  <div class="grade g4">
-    <div class="cartao"><h3>teste_pilha</h3><p>Pilha vazia, ordem LIFO 3, 2, 1, pilha cheia.</p></div>
-    <div class="cartao"><h3>teste_fila</h3><p>Ordem FIFO, fila cheia, vetor circular dando a volta.</p></div>
-    <div class="cartao"><h3>teste_agendados</h3><p>Datas iguais, cancelamento, só executa o que venceu.</p></div>
-    <div class="cartao"><h3>teste_sistema</h3><p>Saldo insuficiente, estorno impossível, validações e histórico cheio.</p></div>
-  </div>
-  <p class="muted" style="margin-top:32px">Um módulo por estrutura: <span class="mono">pilha · fila · agendados · historico · sistema · entrada · main</span>. Compila sem avisos com <span class="mono">gcc -Wall -Wextra -std=c99</span>. O simulador web usa um motor em JavaScript conferido contra a saída real do <span class="mono">banco.exe</span>.</p>
-</section>
-
-<!-- 2. IA -->
+<!-- 1. IA -->
 <section class="slide" aria-label="Uso de IA">
   <p class="rotulo">Processo</p>
   <h2 class="gradiente">Como usamos IA no projeto</h2>
@@ -48,7 +35,7 @@
 <nav class="barra-nav" aria-label="Navegação dos slides">
   <button class="seta-nav" id="anterior" aria-label="Slide anterior"><i class="ph ph-arrow-left" aria-hidden="true"></i></button>
   <div class="pontos" id="pontos"></div>
-  <span id="contador" aria-live="polite">1 / 2</span>
+  <span id="contador" aria-live="polite">1 / 1</span>
   <button class="seta-nav" id="proximo" aria-label="Próximo slide"><i class="ph ph-arrow-right" aria-hidden="true"></i></button>
 </nav>
 <p class="atalhos" aria-hidden="true"><span><kbd>O</kbd> visão geral</span><span><kbd>S</kbd> simulador</span></p>

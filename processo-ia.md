@@ -584,3 +584,11 @@ foi ajustado.
 botão **Abrir o simulador**, que estava nele, passa para o slide 9 (Histórico), agora o último antes do
 simulador. Os estilos de tabela saíram de `slides/css/slides.css`, porque nenhum slide os usa mais, e
 `ferramentas/verificar-site.mjs` confere 9 slides.
+
+## Iteração 29 · 2026-11-12 · Conclusão só com o uso de IA
+
+**Pedido:** tirar da conclusão o slide de qualidade e deixar só o de processo (uso de IA).
+
+**Alterações:** `slides/final.html` perde o slide Qualidade (72 verificações em 4 programas de teste)
+e fica com 1 slide. `ferramentas/verificar-site.mjs` confere 1 slide na conclusão e o README foi
+ajustado.

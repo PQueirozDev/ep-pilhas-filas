@@ -22,7 +22,7 @@ try {
     const slide = join(tmpdir(), 'ep-vetores-slides-' + largura + '.png');
     await pagina.screenshot({ path: slide });
     await pagina.goto(url + '/final.html', { waitUntil: 'networkidle0' });
-    assert.equal(await pagina.$$eval('.slide', els => els.length), 2);
+    assert.equal(await pagina.$$eval('.slide', els => els.length), 1);
     assert.ok(await pagina.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     await pagina.goto(url + '/simulador.html', { waitUntil: 'networkidle0' });
     const estado = await pagina.evaluate(async () => {
