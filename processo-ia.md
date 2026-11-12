@@ -592,3 +592,10 @@ simulador. Os estilos de tabela saíram de `slides/css/slides.css`, porque nenhu
 **Alterações:** `slides/final.html` perde o slide Qualidade (72 verificações em 4 programas de teste)
 e fica com 1 slide. `ferramentas/verificar-site.mjs` confere 1 slide na conclusão e o README foi
 ajustado.
+
+## Iteração 30 · 2026-11-12 · Slide Pilha mais curto
+
+**Pedido:** tirar do slide Pilha a frase sobre o estorno recusado quando o dinheiro já foi usado.
+
+**Alterações (`slides/index.html`):** sai a frase "Se o dinheiro já foi usado, o estorno é recusado e a
+ficha volta ao topo." O slide fica com as duas frases sobre o topo da pilha e a animação.
