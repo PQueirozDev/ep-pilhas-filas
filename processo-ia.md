@@ -551,3 +551,10 @@ mesmo motivo dos balões: é o que a equipe vai falar.
 
 **Alterações (`slides/simulador.html`):** saíram as três frases (`p.desc`). As caixas Agenda e Vetor
 (histórico) mantêm as suas.
+
+## Iteração 25 · 2026-11-12 · Agenda e Vetor sem frase de explicação
+
+**Pedido:** tirar também as frases das caixas Agenda e Vetor (histórico).
+
+**Alterações (`slides/simulador.html`):** saíram as duas últimas frases e o estilo `.desc`, que não
+tem mais uso. Nenhuma caixa do simulador traz texto explicativo.

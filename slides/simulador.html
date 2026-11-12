@@ -134,8 +134,6 @@
   .painel h2 { font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: 0; display: flex; align-items: center; gap: 8px; }
   .painel h2 .marca { width: 8px; height: 8px; border-radius: 2px; }
   .meta { font-family: "Geist Mono", monospace; font-size: 12px; line-height: 16px; color: var(--muted); }
-  .desc { font-size: 14px; line-height: 20px; color: var(--muted); margin: -4px 0 12px; }
-  html.filme .desc { display: none; }
 
   /* Contas */
   .contas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
@@ -430,7 +428,6 @@
       </div>
       <div class="painel" id="pAgenda">
         <header><h2><span class="marca" style="background:var(--agenda)"></span>Agenda · <span class="nao-tec">por data</span><span class="tec">inserção</span></h2><span class="meta tec" id="agendaMeta">quantidade = 0</span></header>
-        <p class="desc">Pagamentos futuros, do mais cedo para o mais tarde.</p>
         <div class="agenda-area">
           <div id="agenda" class="lista-viva"></div>
           <p class="vazio">Nenhum pagamento agendado.</p>
@@ -440,7 +437,6 @@
 
     <div class="painel" id="pHist">
       <header><h2><span class="marca" style="background:var(--lista)"></span>Histórico · vetor</h2><span class="meta tec" id="histMeta">quantidade = 0</span></header>
-      <p class="desc">Tudo o que aconteceu, um evento por posição do vetor, na ordem.</p>
       <div class="hist-area">
         <span class="indice-historico tec">itens[0…999]</span>
         <div id="historico"></div>
