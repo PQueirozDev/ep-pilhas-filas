@@ -17,7 +17,7 @@ try {
     await pagina.setViewport({ width: largura, height: 900 });
     await pagina.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
     await pagina.goto(url + '/#9', { waitUntil: 'networkidle0' });
-    assert.equal(await pagina.$$eval('.slide', els => els.length), 9);
+    assert.equal(await pagina.$$eval('.slide', els => els.length), 10);
     assert.ok(await pagina.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     const slide = join(tmpdir(), 'ep-vetores-slides-' + largura + '.png');
     await pagina.screenshot({ path: slide });

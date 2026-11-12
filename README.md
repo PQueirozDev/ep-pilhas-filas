@@ -77,7 +77,7 @@ O primeiro é efetivado e o segundo é recusado, porque restam R$ 10. A opção 
 
 Roteiro de 15 minutos: **3 min** de problema, **5 min** de demonstração e **7 min** de perguntas.
 
-1. **Problema (slides 1–3):** abra a [apresentação](https://ep-pilhas-filas.vercel.app/)
+1. **Problema (slides 1–4):** abra a [apresentação](https://ep-pilhas-filas.vercel.app/)
    (← / → navegam, **O** mostra a visão geral, **S** abre o simulador).
 2. **Demonstração:** rode `.\banco.exe` e faça dois saques da conta 3 (R$ 40 e R$ 30), depois as opções
    `6` (processar a fila), `11` (situação), `7` (estorno), `7` de novo (pilha vazia) e `12` (histórico).

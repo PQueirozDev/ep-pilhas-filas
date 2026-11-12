@@ -508,3 +508,12 @@ liste só as estruturas usadas no EP.
 **Alterações:** a apresentação passa a ter 9 slides. Saíram o slide de `slides/index.html` e os estilos
 do fluxo (`.fluxo`, `.no`, `.seta`) de `slides/css/slides.css`. `ferramentas/verificar-site.mjs`
 confere 9 slides e o roteiro do README cita os slides 1 a 3.
+
+## Iteração 20 · 2026-11-12 · Slides de objetivo e justificativa
+
+**Pedido:** trazer de volta o slide do fluxo de cada operação, agora com o nome **Objetivo**, e
+renomear o slide das estruturas para **Justificativa**.
+
+**Alterações:** `slides/index.html`, `slides/css/slides.css`, `ferramentas/verificar-site.mjs` e o
+README voltam ao estado da iteração 18 (10 slides, fluxo estático). O slide 3 passa a se chamar
+Objetivo e o slide 4 (Fila, Pilha, Agenda e Vetor), Justificativa.
