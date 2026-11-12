@@ -66,23 +66,15 @@
   </div>
 </section>
 
-<!-- 4. Struct -->
-<section class="slide" aria-label="A struct Operacao">
-  <p class="rotulo">Base de tudo</p>
-  <div class="grade g2" style="align-items:center">
-    <div>
-      <h2 class="gradiente">Uma struct é uma ficha com vários campos</h2>
-      <p class="muted">Cada pedido vira uma <code>Operacao</code>. A mesma ficha passa pela fila, pela pilha, pela agenda e pelo histórico.</p>
-      <p class="muted" style="margin-top:16px">Regra única para movimentar dinheiro: <b style="color:var(--text)">sai da origem e entra no destino</b>. Depósito não tem origem e saque não tem destino.</p>
-    </div>
-<pre><span class="k">typedef struct</span> {
-    <span class="k">int</span>    numero;       <span class="c">/* ordem de chegada  */</span>
-    <span class="k">int</span>    tipo;         <span class="c">/* TIPO_SAQUE...     */</span>
-    <span class="k">int</span>    contaOrigem;  <span class="c">/* de onde sai       */</span>
-    <span class="k">int</span>    contaDestino; <span class="c">/* para onde vai     */</span>
-    <span class="k">double</span> valor;
-    <span class="k">int</span>    data;         <span class="c">/* AAAAMMDD (agenda) */</span>
-} Operacao;</pre>
+<!-- 4. Objetivo -->
+<section class="slide" aria-label="Objetivo">
+  <p class="rotulo">Objetivo</p>
+  <h2 class="gradiente">Estruturas que usamos no EP</h2>
+  <div class="grade g4">
+    <div class="cartao"><h3><span class="marca" style="background:var(--fifo)"></span>Fila</h3></div>
+    <div class="cartao"><h3><span class="marca" style="background:var(--lifo)"></span>Pilha</h3></div>
+    <div class="cartao"><h3><span class="marca" style="background:var(--agenda)"></span>Agenda</h3></div>
+    <div class="cartao"><h3><span class="marca" style="background:var(--lista)"></span>Vetor</h3></div>
   </div>
 </section>
 

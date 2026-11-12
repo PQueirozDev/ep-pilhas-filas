@@ -492,3 +492,11 @@ principal e abri-los a partir do simulador com a tecla **.** (ponto).
 
 **Alterações:** o slide 3 fica estático. Saíram a função `criarFluxo` de `slides/js/slides.js`, os
 atributos `data-fluxo` de `slides/index.html` e os estilos `.aceso` de `slides/css/slides.css`.
+
+## Iteração 18 · 2026-11-12 · Slide de objetivo
+
+**Pedido:** trocar o slide 4 ("Base de tudo", com a struct `Operacao`) por um slide de objetivo que
+liste só as estruturas usadas no EP.
+
+**Alterações (`slides/index.html`):** o slide 4 passa a se chamar **Objetivo**, com o título
+"Estruturas que usamos no EP" e quatro cartões: Fila, Pilha, Agenda e Vetor, cada um com a cor da sua estrutura.
