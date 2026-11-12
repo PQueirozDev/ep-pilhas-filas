@@ -7,8 +7,8 @@
  * ficha estava, desenhamos o novo estado e animamos do lugar antigo ao novo).
  *
  * A tela é dividida em partes (fila, pilha, agenda e vetor): cada uma mostra
- * só a sua estrutura e roda um roteiro curto (BancoEP.PARTES). A cada passo,
- * um balão em linguagem simples aparece colado na parte que mudou.
+ * só a sua estrutura e roda um roteiro curto (BancoEP.PARTES). A explicação
+ * de cada passo fica por conta de quem apresenta.
  */
 (function () {
   'use strict';
@@ -31,7 +31,7 @@
   const elementos = new Map();                  /* chave -> elemento (fichas e registros) */
   let fnAtual = null, hojeAtual = null;
   let parteAtual = null;                        /* 'fila' | 'pilha' | 'agenda' | 'vetor' | null (tudo) */
-  let passoAtual = null;                        /* último passo mostrado (para redesenhar o balão) */
+  let passoAtual = null;                        /* último passo mostrado (para redesenhar a narração) */
 
   const duracao = () => (movimentoReduzido.matches || pulando) ? 0 : Math.round(520 / velocidade);
   const tecnico = () => document.documentElement.classList.contains('tecnico');
@@ -217,61 +217,6 @@
     }
   }
 
-  /* ---------------- Balão ---------------- */
-  /* Painel de cada função, para quando o passo não destaca uma ficha visível */
-  const PAINEL_DA_FUNCAO = {
-    solicitarOperacao: 'pFila', enfileirar: 'pFila', desenfileirar: 'pFila', processarProximo: 'pFila',
-    empilhar: 'pPilha', desempilhar: 'pPilha', estornar: 'pPilha', desfazerOperacao: 'pPilha',
-    agendarPagamento: 'pAgenda', agendar: 'pAgenda', compararAgendados: 'pAgenda',
-    cancelarAgendado: 'pAgenda', avancarData: 'pAgenda',
-    registrarHistorico: 'pHist', conferirHistorico: 'pHist', aplicarOperacao: 'contas'
-  };
-  const visivel = el => el && el.getClientRects().length > 0;
-  function alvoDoBalao(p) {
-    const f = p.foco;
-    let el = null;
-    if (f && f.area === 'conta') el = $(f.chave);
-    else if (f && f.area !== 'data') el = elementos.get(f.chave);
-    if (!visivel(el)) el = $(PAINEL_DA_FUNCAO[p.fn]);
-    return visivel(el) ? el : $('palco');
-  }
-  function posicionarBalao() {
-    const balao = $('balao'), p = passoAtual;
-    if (!p || !p.simples) return;
-    const r = alvoDoBalao(p).getBoundingClientRect();
-    const largura = Math.min(360, innerWidth - 32);
-    balao.style.width = largura + 'px';
-    const altura = balao.offsetHeight, centro = r.left + r.width / 2;
-    const esquerda = Math.max(16, Math.min(centro - largura / 2, innerWidth - largura - 16));
-    /* Embaixo do alvo; se não couber, em cima; no último caso, preso à borda da tela */
-    let topo = r.bottom + 12, acima = false;
-    if (topo + altura > innerHeight - 16 && r.top - 12 - altura > 88) { topo = r.top - 12 - altura; acima = true; }
-    topo = Math.max(88, Math.min(topo, innerHeight - altura - 96));
-    balao.classList.toggle('acima', acima);
-    balao.style.setProperty('--seta', Math.max(16, Math.min(centro - esquerda, largura - 16)) + 'px');
-    balao.style.left = esquerda + scrollX + 'px';
-    balao.style.top = topo + scrollY + 'px';
-  }
-  function mostrarBalao(p) {
-    const balao = $('balao');
-    clearTimeout(balao._t);
-    balao.classList.remove('visivel');
-    if (FILME || !p || !p.simples) return;
-    /* Espera a animação das fichas terminar para medir o lugar final */
-    balao._t = setTimeout(() => {
-      balao.className = 'balao tom-' + p.tom;
-      balao.textContent = p.simples;
-      posicionarBalao();
-      balao.classList.add('visivel');
-    }, duracao() + 40);
-  }
-  function esconderBalao() {
-    const balao = $('balao');
-    clearTimeout(balao._t);
-    balao.classList.remove('visivel');
-    passoAtual = null;
-  }
-
   /* ---------------- Código, narração e terminal ---------------- */
   function mostrarCodigo(fn, linha, tom) {
     const c = B.CODIGO[fn], caixa = $('codigo');
@@ -289,7 +234,7 @@
   }
 
   /* A explicação ligada ao código C aparece no filme e com "Detalhes técnicos";
-   * no modo simples quem explica é o balão. */
+   * no modo simples, quem explica é a equipe durante a apresentação. */
   function narrar(p) {
     $('narCmd').textContent = p.titulo + ' · passo ' + (p.i + 1) + ' de ' + p.total;
     $('narTexto').textContent = (FILME || tecnico()) ? p.legenda : '';
@@ -366,7 +311,6 @@
     narrar(p);
     p.log.forEach(l => escrever(l.replace(/^ {2}/, ''), classeLog(l), k));
     passoAtual = p;
-    mostrarBalao(p);
   }
 
   function aguardar(p) {
@@ -395,7 +339,7 @@
     pulando = false;
     if (liberar) liberar();
     atualizarBotoes();
-    esconderBalao();
+    passoAtual = null;
     banco = new B.Banco();
     elementos.forEach(el => el.remove());
     elementos.clear();
@@ -651,7 +595,7 @@
     });
     $('modoTecnico').addEventListener('change', e => {
       document.documentElement.classList.toggle('tecnico', e.target.checked);
-      if (passoAtual) { narrar(passoAtual); posicionarBalao(); }
+      if (passoAtual) narrar(passoAtual);
     });
     document.querySelectorAll('[data-vel]').forEach(b => b.addEventListener('click', () => {
       velocidade = Number(b.dataset.vel);
@@ -672,7 +616,6 @@
     document.addEventListener('keyup', e => {
       if (e.key === ' ' && !digitando(e) && !emManual()) e.preventDefault();
     });
-    window.addEventListener('resize', posicionarBalao);
 
     /* Modo claro / escuro, lembrado neste navegador */
     const raizHtml = document.documentElement;

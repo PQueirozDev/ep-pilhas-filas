@@ -256,33 +256,11 @@
 
   .saida-clone { position: fixed; z-index: 30; pointer-events: none; margin: 0; }
 
-  /* Balão: o que acabou de acontecer, colado na parte que mudou */
-  .balao {
-    position: absolute; z-index: 15; left: 0; top: 0; pointer-events: none;
-    padding: 12px 16px; border-radius: 12px; background: #F4F4F4; color: #181818;
-    font-size: 16px; line-height: 24px; font-weight: 500;
-    box-shadow: 0 12px 32px rgba(0,0,0,.45);
-    opacity: 0; transform: translateY(4px); visibility: hidden;
-    transition: opacity 300ms var(--curva), transform 300ms var(--curva), visibility 0s linear 300ms;
-  }
-  .balao.visivel { opacity: 1; transform: none; visibility: visible; transition: opacity 300ms var(--curva), transform 300ms var(--curva); }
-  .balao::before {
-    content: ""; position: absolute; top: -6px; left: calc(var(--seta, 50%) - 6px);
-    width: 12px; height: 12px; background: inherit; transform: rotate(45deg); border-radius: 2px;
-  }
-  .balao.acima::before { top: auto; bottom: -6px; }
-  .balao.tom-ok { background: #CDEFD7; }
-  .balao.tom-erro { background: #F9C9CB; }
-  html.filme .balao { display: none; }
-
   /* Modo claro: cores que não vêm dos tokens. Código C e terminal continuam escuros,
    * com as cores originais, como blocos de código. */
   html[data-tema="claro"] .topo { background: rgba(255, 255, 255, .82); }
   html[data-tema="claro"] .segmentado button[aria-pressed="true"] { background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
   html[data-tema="claro"] .interruptor input:checked::after { background: #FFFFFF; }
-  html[data-tema="claro"] .balao { background: #1A1A1A; color: #FFFFFF; }
-  html[data-tema="claro"] .balao.tom-ok { background: #1F5E36; }
-  html[data-tema="claro"] .balao.tom-erro { background: #8A2A30; }
   html[data-tema="claro"] .conta.foco-ok, html[data-tema="claro"] .conta.foco-erro { color: var(--text); }
   html[data-tema="claro"] .codigo-caixa, html[data-tema="claro"] .terminal {
     --bg: #181818; --text: #F4F4F4; --muted: #9B9B9B;
@@ -496,8 +474,6 @@
     </div>
   </aside>
 </main>
-
-<div class="balao" id="balao" role="status" aria-live="polite"></div>
 
 <script src="js/banco.js"></script>
 <script src="js/simulador.js"></script>

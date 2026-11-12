@@ -533,3 +533,13 @@ que só esse slide usava, saíram.
 
 **Alterações (`slides/index.html`):** o botão sai da capa e entra abaixo da tabela do slide 10, que é o
 último antes do simulador. Na capa fica só **Começar a apresentação**, agora como botão principal.
+
+## Iteração 23 · 2026-11-12 · Simulador sem balões
+
+**Pedido:** tirar os balões que explicavam cada passo do simulador, porque essa explicação é o que a
+equipe vai falar durante a apresentação.
+
+**Alterações (`slides/simulador.html`, `slides/js/simulador.js`):** saíram o elemento do balão, seus
+estilos e as funções que o posicionavam. O resto continua: código C, terminal, barra de progresso e a
+explicação técnica opcional ("Detalhes técnicos", desligada por padrão). As frases simples continuam
+no motor (`slides/js/banco.js`), apenas não aparecem mais na tela.
