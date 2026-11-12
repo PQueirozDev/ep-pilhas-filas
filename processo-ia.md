@@ -456,9 +456,11 @@ voltar um passo, o espaço para passar para a próxima parte (já rodando), o Ba
 - **Espaço** passa para a próxima parte (Fila → Pilha → Agenda → Vetor → Fila) e **Backspace** volta
   para a anterior, sem acionar o botão em foco. Depois do primeiro clique em **Rodar**, a parte nova
   já começa a rodar sozinha.
-- Parte **Pilha** refeita a pedido: em vez de começar com a pilha pronta, mostra os dois saques da
-  Carla e a transferência da Ana entrando na fila, cada operação efetivada subindo para o topo e a
-  recusa do saque sem saldo; depois, os estornos (12 passos). A fila aparece junto nessa parte.
+- Partes **Fila** e **Pilha** encadeadas: a Fila mostra os dois saques da Carla e a transferência da
+  Ana entrando na fila, cada operação efetivada subindo para a pilha e a recusa do saque sem saldo
+  (6 passos, com a pilha visível). A Pilha começa exatamente onde a Fila terminou (o mesmo roteiro
+  roda em silêncio como preparo) e mostra só os estornos. Numa primeira tentativa os dois roteiros
+  ficaram misturados na parte da Pilha; corrigido a pedido da equipe.
 - Botão **Modo claro** na barra de cima, lembrado neste navegador (`localStorage`, com proteção para
   quando não houver armazenamento). Os tokens do tema claro ficam em `slides/css/base.css`, sob
   `html[data-tema="claro"]`; código C e terminal continuam escuros, com as cores originais. O filme é sempre escuro.

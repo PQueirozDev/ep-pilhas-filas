@@ -426,10 +426,9 @@
   /* Em cada parte, alguns passos não acrescentam nada ao que está na tela
    * (ex.: o registro no histórico, que só aparece na parte do vetor). */
   const MOSTRAR_PASSO = {
-    fila: p => p.fn !== 'registrarHistorico' && p.fn !== 'empilhar' && !(p.fn === 'solicitarOperacao' && p.tom !== 'erro'),
-    /* Pilha: o pedido entrando na fila, a operação subindo para o topo, a recusa e os estornos */
-    pilha: p => ['enfileirar', 'empilhar', 'desempilhar', 'desfazerOperacao', 'estornar'].includes(p.fn) ||
-      (p.fn === 'aplicarOperacao' && p.tom === 'erro'),
+    /* Fila: o pedido entrando no fim, a operação efetivada subindo para a pilha e a recusa por saldo */
+    fila: p => p.fn === 'enfileirar' || p.fn === 'empilhar' || (p.fn === 'aplicarOperacao' && p.tom === 'erro'),
+    pilha: p => p.fn !== 'registrarHistorico',
     agenda: p => p.fn !== 'registrarHistorico',
     vetor: p => p.fn === 'registrarHistorico'
   };
