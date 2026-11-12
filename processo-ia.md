@@ -558,3 +558,11 @@ mesmo motivo dos balões: é o que a equipe vai falar.
 
 **Alterações (`slides/simulador.html`):** saíram as duas últimas frases e o estilo `.desc`, que não
 tem mais uso. Nenhuma caixa do simulador traz texto explicativo.
+
+## Iteração 26 · 2026-11-12 · Slides sem blocos de código
+
+**Pedido:** tirar dos slides as caixas que mostravam trechos de código.
+
+**Alterações (`slides/index.html`):** os slides Fila, Pilha, Estado global, Agenda e Histórico perdem o
+bloco de código C. O texto e as animações ocupam o slide sozinhos, numa coluna de até 760 px. A saída
+do banco.exe no slide de demonstração (`slides/final.html`) continua.

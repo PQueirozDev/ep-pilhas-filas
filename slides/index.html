@@ -64,106 +64,50 @@
 <!-- 5. Fila -->
 <section class="slide" aria-label="Fila FIFO" data-cor="var(--fifo)">
   <p class="rotulo" style="color:var(--fifo)">Fila · FIFO</p>
-  <div class="grade g2" style="align-items:center">
-    <div>
-      <h2 class="gradiente">Quem pediu primeiro é atendido primeiro</h2>
-      <p class="muted">Carla tem R$ 50 e pede dois saques. O primeiro da fila leva o dinheiro e o segundo é recusado. Se a ordem fosse outra, o resultado seria outro. Por isso a fila não é decorativa.</p>
-      <div class="cena cena-fila" data-cena="fila" aria-label="Animação: pedidos entrando e saindo da fila"></div>
-    </div>
-<pre>Operacao desenfileirar(void)
-{
-    Operacao saida = {0}; /* numero 0 indica que não havia operação. */
-    if (filaVazia()) return saida;
-    saida = banco.pedidos.itens[banco.pedidos.inicio];
-    banco.pedidos.inicio = (banco.pedidos.inicio + 1) % CAPACIDADE_FILA;
-    banco.pedidos.quantidade--;
-    return saida;
-}</pre>
+  <div style="max-width:760px">
+    <h2 class="gradiente">Quem pediu primeiro é atendido primeiro</h2>
+    <p class="muted">Carla tem R$ 50 e pede dois saques. O primeiro da fila leva o dinheiro e o segundo é recusado. Se a ordem fosse outra, o resultado seria outro. Por isso a fila não é decorativa.</p>
+    <div class="cena cena-fila" data-cena="fila" aria-label="Animação: pedidos entrando e saindo da fila"></div>
   </div>
 </section>
 
 <!-- 6. Pilha -->
 <section class="slide" aria-label="Pilha LIFO" data-cor="var(--lifo)">
   <p class="rotulo" style="color:var(--lifo)">Pilha · LIFO</p>
-  <div class="grade g2" style="align-items:center">
-    <div>
-      <h2 class="gradiente">O estorno desfaz a última efetivada</h2>
-      <p class="muted">Cada operação efetivada vai para o topo. Desfazer sempre a mais recente evita desmontar uma operação de que outras ainda dependem. Se o dinheiro já foi usado, o estorno é recusado e a ficha volta ao topo.</p>
-      <div class="cena cena-pilha" data-cena="pilha" aria-label="Animação: empilhar e desempilhar"></div>
-    </div>
-<pre>Operacao desempilhar(void)
-{
-    Operacao saida = {0}; /* numero 0 indica que não havia operação. */
-    if (pilhaVazia()) return saida;
-    banco.efetivadas.quantidade--;
-    saida = banco.efetivadas.itens[banco.efetivadas.quantidade];
-    return saida;
-}</pre>
+  <div style="max-width:760px">
+    <h2 class="gradiente">O estorno desfaz a última efetivada</h2>
+    <p class="muted">Cada operação efetivada vai para o topo. Desfazer sempre a mais recente evita desmontar uma operação de que outras ainda dependem. Se o dinheiro já foi usado, o estorno é recusado e a ficha volta ao topo.</p>
+    <div class="cena cena-pilha" data-cena="pilha" aria-label="Animação: empilhar e desempilhar"></div>
   </div>
 </section>
 
 <!-- 7. Estado global -->
 <section class="slide" aria-label="Estado global e retorno por valor">
   <p class="rotulo">Como as funções trabalham</p>
-  <div class="grade g2" style="align-items:center">
-    <div>
-      <h2 class="gradiente">Acesso direto ao banco, retorno por valor</h2>
-      <p class="muted">Existe um único <code>banco</code> global. As funções acessam seus campos com o ponto, como <code>banco.efetivadas.quantidade</code>.</p>
-      <p class="muted" style="margin-top:16px">Ao remover da fila ou pilha, a função devolve a operação inteira por valor. Uma operação com <code>numero == 0</code> indica que a estrutura estava vazia.</p>
-    </div>
-<pre>Operacao desfeita;
-
-iniciarPilha();
-desfeita = desempilhar();
-if (desfeita.numero != 0) {
-    imprimirOperacao(desfeita);
-} else {
-    printf("Nada a estornar.");
-}</pre>
+  <div style="max-width:760px">
+    <h2 class="gradiente">Acesso direto ao banco, retorno por valor</h2>
+    <p class="muted">Existe um único <code>banco</code> global. As funções acessam seus campos com o ponto, como <code>banco.efetivadas.quantidade</code>.</p>
+    <p class="muted" style="margin-top:16px">Ao remover da fila ou pilha, a função devolve a operação inteira por valor. Uma operação com <code>numero == 0</code> indica que a estrutura estava vazia.</p>
   </div>
 </section>
 
 <!-- 8. Agenda -->
 <section class="slide" aria-label="Agenda por inserção" data-cor="var(--agenda)">
   <p class="rotulo" style="color:var(--agenda)">Agenda · inserção</p>
-  <div class="grade g2" style="align-items:center">
-    <div>
-      <h2 class="gradiente">Ordenamos por data e número de entrada</h2>
-      <p class="muted">A ordenação por inserção desloca os itens até cada pagamento chegar à posição certa. O <b style="color:var(--text)">número de entrada</b> desempata datas iguais e mantém FIFO no mesmo dia.</p>
-      <div class="cena cena-agenda" data-cena="agenda" aria-label="Animação: agenda sendo ordenada por inserção"></div>
-    </div>
-<pre>int compararAgendados(Operacao x, Operacao y)
-{
-
-    if (x.data &lt; y.data) return -1;
-    if (x.data &gt; y.data) return 1;
-
-    if (x.numero &lt; y.numero) return -1;
-    if (x.numero &gt; y.numero) return 1;
-    return 0;
-}</pre>
+  <div style="max-width:760px">
+    <h2 class="gradiente">Ordenamos por data e número de entrada</h2>
+    <p class="muted">A ordenação por inserção desloca os itens até cada pagamento chegar à posição certa. O <b style="color:var(--text)">número de entrada</b> desempata datas iguais e mantém FIFO no mesmo dia.</p>
+    <div class="cena cena-agenda" data-cena="agenda" aria-label="Animação: agenda sendo ordenada por inserção"></div>
   </div>
 </section>
 
 <!-- 9. Histórico -->
 <section class="slide" aria-label="Histórico em vetor de registros" data-cor="var(--lista)">
   <p class="rotulo" style="color:var(--lista)">Histórico · vetor</p>
-  <div class="grade g2" style="align-items:center">
-    <div>
-      <h2 class="gradiente">Um evento em cada posição do vetor</h2>
-      <p class="muted">Cada evento ocupa <code>itens[quantidade]</code>. Depois, o contador aumenta. O vetor guarda até 1.000 registros; se não houver espaço, o sistema recusa o comando antes de alterar o banco.</p>
-      <div class="cena cena-lista" data-cena="lista" aria-label="Animação: registros ocupando posições do vetor"></div>
-    </div>
-<pre>int registrarHistorico(Operacao op, int situacao, int data)
-{
-    int pos = banco.historico.quantidade;
-    if (!historicoTemEspaco(1)) return 0;
-    banco.historico.itens[pos].op = op;
-    banco.historico.itens[pos].situacao = situacao;
-    banco.historico.itens[pos].data = data;
-    banco.historico.quantidade++;
-    return 1;
-}</pre>
+  <div style="max-width:760px">
+    <h2 class="gradiente">Um evento em cada posição do vetor</h2>
+    <p class="muted">Cada evento ocupa <code>itens[quantidade]</code>. Depois, o contador aumenta. O vetor guarda até 1.000 registros; se não houver espaço, o sistema recusa o comando antes de alterar o banco.</p>
+    <div class="cena cena-lista" data-cena="lista" aria-label="Animação: registros ocupando posições do vetor"></div>
   </div>
 </section>
 
