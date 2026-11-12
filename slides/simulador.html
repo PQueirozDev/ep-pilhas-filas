@@ -35,6 +35,7 @@
   .chip.pulsa { animation: pulsa 900ms var(--curva); }
   @keyframes pulsa { 0% { transform: scale(1); } 30% { transform: scale(1.08); background: var(--agenda-a); } 100% { transform: scale(1); } }
   .segmentado { display: inline-flex; padding: 2px; border-radius: 10px; background: var(--surface-2); }
+  .segmentado[hidden] { display: none; }
   .segmentado button {
     border: 0; background: transparent; color: var(--muted); cursor: pointer;
     font: 500 14px/20px "Geist", sans-serif; padding: 4px 12px; border-radius: 8px;
@@ -47,55 +48,54 @@
   .interruptor input:checked { background: var(--lifo); }
   .interruptor input:checked::after { transform: translateX(12px); }
 
-  /* Layout principal */
+  /* Layout principal: abas das partes em cima; estruturas | explicação, código e terminal */
   .sim {
     display: grid; gap: 24px; padding: 24px;
-    grid-template-columns: 320px minmax(0, 1fr) 380px;
-    grid-template-areas: "comandos palco explica";
-    max-width: 1680px; margin: 0 auto; align-items: start;
+    grid-template-columns: minmax(0, 1fr) 400px;
+    grid-template-areas: "partes partes" "palco explica";
+    max-width: 1560px; margin: 0 auto; align-items: start;
   }
-  .comandos { grid-area: comandos; }
-  .palco { grid-area: palco; display: grid; gap: 16px; }
+  .partes { grid-area: partes; }
+  .palco { grid-area: palco; display: grid; gap: 16px; min-width: 0; }
   .explica { grid-area: explica; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; position: sticky; top: 88px; min-width: 0; }
-  .comandos, .palco { min-width: 0; }
+
+  /* Abas: uma parte por estrutura */
+  .partes { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .abas { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); overflow-x: auto; max-width: 100%; }
+  .abas button {
+    display: inline-flex; align-items: center; gap: 8px; flex: none;
+    border: 0; background: transparent; color: var(--muted); cursor: pointer;
+    font: 600 16px/24px "Geist", sans-serif; padding: 8px 16px; border-radius: 10px;
+    transition: background-color 300ms var(--curva), color 300ms var(--curva);
+  }
+  .abas button:hover { color: var(--text); }
+  .abas button[aria-selected="true"] { background: var(--surface-2); color: var(--text); box-shadow: inset 0 -2px 0 var(--cor); }
+  .abas .marca { width: 8px; height: 8px; border-radius: 2px; background: var(--cor); }
+  .partes-acoes { display: flex; gap: 8px; }
+  html.filme .partes { display: none; }
+
+  /* Em cada parte, só aparecem as contas e a estrutura daquela parte */
+  html[data-parte] .palco > .painel, html[data-parte] .meio > .painel { display: none; }
+  html[data-parte="fila"] #pFila, html[data-parte="fila"] #pOp,
+  html[data-parte="pilha"] #pOp, html[data-parte="pilha"] #pPilha,
+  html[data-parte="agenda"] #pOp, html[data-parte="agenda"] #pAgenda,
+  html[data-parte="vetor"] #pHist { display: block; }
+  html[data-parte] .meio { display: flex; flex-wrap: wrap; }
+  html[data-parte] .meio > .painel { flex: 1 1 240px; }
+  html[data-parte] .meio > #pOp { flex: 0 1 240px; }
+  html[data-parte] .pilha-area, html[data-parte] .agenda-area { min-height: 320px; }
+
+  /* Detalhes técnicos (índices do vetor, nomes de variáveis): só com o interruptor */
+  html:not(.tecnico):not(.filme) .tec { display: none; }
+  html.tecnico .nao-tec, html.filme .nao-tec { display: none; }
 
   .painel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
   .painel > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
   .painel h2 { font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: 0; display: flex; align-items: center; gap: 8px; }
   .painel h2 .marca { width: 8px; height: 8px; border-radius: 2px; }
   .meta { font-family: "Geist Mono", monospace; font-size: 12px; line-height: 16px; color: var(--muted); }
-
-  /* Comandos */
-  .comandos { display: grid; gap: 16px; }
-  .grupo { display: grid; gap: 12px; }
-  .grupo + .grupo { padding-top: 16px; border-top: 1px solid var(--line); }
-  .campos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .campo { display: grid; gap: 4px; }
-  .campo.cheio { grid-column: 1 / -1; }
-  .campo label { font-size: 12px; line-height: 16px; color: var(--muted); }
-  .campo input {
-    width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line);
-    background: var(--bg); color: var(--text); font: 400 14px/20px "Geist Mono", monospace;
-    transition: border-color 300ms var(--curva);
-  }
-  .campo input:hover { border-color: #444; }
-  .campo input[aria-invalid="true"] { border-color: var(--erro); }
-  .campo .dica-erro { font-size: 12px; line-height: 16px; color: var(--erro); }
-  .campo .dica-erro:empty { display: none; }
-  .campo[hidden] { display: none; }
-  .tipos { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 12px; background: var(--bg); }
-  .tipos button {
-    border: 0; padding: 4px 8px; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer;
-    font: 500 14px/20px "Geist", sans-serif; transition: background-color 300ms var(--curva), color 300ms var(--curva);
-  }
-  .tipos button:hover { color: var(--text); }
-  .tipos button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
-  .acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .acoes .botao { font-size: 14px; line-height: 20px; }
-  .acoes .cheio { grid-column: 1 / -1; }
-  .botao.fifo { border-color: rgba(124,196,250,.4); }
-  .botao.lifo { border-color: rgba(245,185,113,.4); }
-  .botao.agenda { border-color: rgba(195,166,247,.4); }
+  .desc { font-size: 14px; line-height: 20px; color: var(--muted); margin: -4px 0 12px; }
+  html.filme .desc { display: none; }
 
   /* Contas */
   .contas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
@@ -165,7 +165,7 @@
   #agenda .ficha .quando { grid-row: 1 / span 2; grid-column: 2; align-self: center; font: 500 14px/20px "Geist Mono", monospace; color: var(--agenda); }
 
   /* Histórico (vetor) */
-  .hist-area { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 0; padding: 12px; border-radius: 12px; background: var(--bg); }
+  .hist-area { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 0; padding: 12px; border-radius: 12px; background: var(--bg); min-height: 64px; }
   #historico { display: contents; }
   .indice-historico { font: 500 12px/16px "Geist Mono", monospace; color: var(--muted); padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px; }
   .no {
@@ -182,20 +182,23 @@
   .no.s-estorno .sit { color: var(--lifo); }
   .no.s-agenda .sit { color: var(--agenda); }
   .no.s-ok .sit { color: var(--lista); }
+  html[data-parte="vetor"] .no .caixa { padding: 8px 12px; font-size: 14px; line-height: 20px; }
   .nulo { display: flex; align-items: center; font: 500 12px/16px "Geist Mono", monospace; color: var(--muted); }
   .nulo::before { content: ""; width: 24px; height: 1px; background: var(--muted); margin: 0 4px; }
 
   /* Explicação */
-  .narracao { min-height: 200px; }
   .narracao .cmd { font-size: 14px; line-height: 20px; color: var(--muted); }
-  .narracao .texto { font-size: 18px; line-height: 28px; margin-top: 8px; transition: opacity 300ms var(--curva); }
+  .narracao .texto { font-size: 16px; line-height: 24px; margin-top: 4px; transition: opacity 300ms var(--curva); }
+  .narracao .texto:empty { display: none; }
   .narracao.tom-erro { border-color: rgba(242,135,139,.5); }
   .narracao.tom-ok { border-color: rgba(139,211,160,.4); }
-  .progresso { display: flex; gap: 4px; margin-top: 16px; flex-wrap: wrap; }
+  .progresso { display: flex; gap: 4px; margin-top: 12px; flex-wrap: wrap; }
+  .progresso:empty { display: none; }
   .progresso span { width: 16px; height: 4px; border-radius: 2px; background: var(--line); transition: background-color 300ms var(--curva); }
   .progresso span.feito { background: var(--muted); }
   .progresso span.atual { background: var(--text); }
-  .controle-passo { display: flex; gap: 8px; margin-top: 16px; }
+  .controle-passo { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .controle-passo .dica { font-size: 12px; line-height: 16px; color: var(--muted); margin-left: auto; }
   .codigo-caixa { max-height: 336px; overflow: auto; border-radius: 12px; background: var(--bg); padding: 8px 0; position: relative; }
   .codigo-caixa .ln { display: grid; grid-template-columns: 32px 1fr; padding: 0 12px 0 0; white-space: pre; transition: background-color 300ms var(--curva); }
   .codigo-caixa .ln::before { content: attr(data-n); text-align: right; padding-right: 12px; color: #555; }
@@ -213,13 +216,32 @@
 
   .saida-clone { position: fixed; z-index: 30; pointer-events: none; margin: 0; }
 
-  @media (max-width: 1359px) {
-    .sim { grid-template-columns: 300px minmax(0, 1fr); grid-template-areas: "comandos palco" "explica explica"; }
+  /* Balão: o que acabou de acontecer, colado na parte que mudou */
+  .balao {
+    position: absolute; z-index: 15; left: 0; top: 0; pointer-events: none;
+    padding: 12px 16px; border-radius: 12px; background: #F4F4F4; color: #181818;
+    font-size: 16px; line-height: 24px; font-weight: 500;
+    box-shadow: 0 12px 32px rgba(0,0,0,.45);
+    opacity: 0; transform: translateY(4px); visibility: hidden;
+    transition: opacity 300ms var(--curva), transform 300ms var(--curva), visibility 0s linear 300ms;
+  }
+  .balao.visivel { opacity: 1; transform: none; visibility: visible; transition: opacity 300ms var(--curva), transform 300ms var(--curva); }
+  .balao::before {
+    content: ""; position: absolute; top: -6px; left: calc(var(--seta, 50%) - 6px);
+    width: 12px; height: 12px; background: inherit; transform: rotate(45deg); border-radius: 2px;
+  }
+  .balao.acima::before { top: auto; bottom: -6px; }
+  .balao.tom-ok { background: #CDEFD7; }
+  .balao.tom-erro { background: #F9C9CB; }
+  html.filme .balao { display: none; }
+
+  @media (max-width: 1199px) {
+    .sim { grid-template-columns: minmax(0, 1fr); grid-template-areas: "partes" "palco" "explica"; }
     .explica { position: static; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
     .explica .narracao { grid-column: 1 / -1; }
   }
   @media (max-width: 999px) {
-    .sim { grid-template-columns: minmax(0, 1fr); grid-template-areas: "palco" "explica" "comandos"; padding: 16px; }
+    .sim { padding: 16px; }
     .explica { grid-template-columns: minmax(0, 1fr); }
     .meio { grid-template-columns: 1fr; }
     .pilha-area, .agenda-area { min-height: 0; }
@@ -227,6 +249,14 @@
     .conta { padding: 12px; }
     .conta .saldo { font-size: 18px; line-height: 28px; }
     .topo .titulo { display: none; }
+    .abas button { font-size: 14px; line-height: 20px; padding: 8px 12px; }
+    /* No celular, os botões de passo ficam presos embaixo da tela */
+    html:not(.filme) .controle-passo {
+      position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 25; margin: 0;
+      padding: 8px; border-radius: 12px; background: rgba(31, 31, 31, .92); border: 1px solid var(--line);
+    }
+    html:not(.filme) body { padding-bottom: 80px; }
+    .controle-passo .dica { display: none; }
   }
   @media (max-width: 520px) {
     .conta { padding: 8px; }
@@ -234,6 +264,7 @@
     .conta .quem { font-size: 12px; line-height: 16px; }
     .conta .saldo { font-size: 14px; line-height: 20px; margin-top: 4px; }
     .trilho .ponta { display: none; }
+    .abas .longo { display: none; }
   }
 </style>
 </head>
@@ -244,112 +275,70 @@
   <a class="botao pequeno" href="index.html"><i class="ph ph-arrow-left" aria-hidden="true"></i>Slides</a>
   <span class="titulo">Simulador do Banco EP</span>
   <span class="chip" id="chipData">hoje <b id="hoje">05/11/2026</b></span>
-  <div class="segmentado" role="group" aria-label="Velocidade">
+  <label class="interruptor"><input type="checkbox" id="autoPlay"> Avançar sozinho</label>
+  <div class="segmentado" id="velocidades" role="group" aria-label="Velocidade" hidden>
     <button type="button" data-vel="0.5" aria-pressed="false">0,5×</button>
     <button type="button" data-vel="1" aria-pressed="true">1×</button>
     <button type="button" data-vel="2" aria-pressed="false">2×</button>
   </div>
-  <label class="interruptor"><input type="checkbox" id="modoPasso"> Passo a passo</label>
+  <label class="interruptor"><input type="checkbox" id="modoTecnico"> Detalhes técnicos</label>
 </header>
 
 <main class="sim">
-  <!-- Comandos -->
-  <aside class="comandos painel" aria-label="Comandos do banco">
-    <div class="grupo">
-      <p class="rotulo">Roteiros prontos</p>
-      <div class="acoes">
-        <button class="botao primario cheio" id="rodarDemo" type="button"><i class="ph ph-play" aria-hidden="true"></i>Rodar a demonstração</button>
-        <button class="botao" id="rodarEstorno" type="button">Estorno impossível</button>
-        <button class="botao" id="reiniciar" type="button"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i>Reiniciar</button>
-      </div>
+  <!-- Partes: uma estrutura por vez -->
+  <nav class="partes" aria-label="Partes do simulador">
+    <div class="abas" role="tablist" aria-label="Escolha a estrutura">
+      <button type="button" role="tab" data-parte="fila" aria-selected="false" style="--cor:var(--fifo)"><span class="marca"></span>Fila</button>
+      <button type="button" role="tab" data-parte="pilha" aria-selected="false" style="--cor:var(--lifo)"><span class="marca"></span>Pilha</button>
+      <button type="button" role="tab" data-parte="agenda" aria-selected="false" style="--cor:var(--agenda)"><span class="marca"></span>Agenda</button>
+      <button type="button" role="tab" data-parte="vetor" aria-selected="false" style="--cor:var(--lista)"><span class="marca"></span>Vetor<span class="longo"> (histórico)</span></button>
     </div>
-
-    <form class="grupo" id="formPedido" novalidate>
-      <p class="rotulo">Pedido imediato · entra na fila</p>
-      <div class="tipos" role="group" aria-label="Tipo de operação">
-        <button type="button" data-tipo="1" aria-pressed="true">Depósito</button>
-        <button type="button" data-tipo="2" aria-pressed="false">Saque</button>
-        <button type="button" data-tipo="3" aria-pressed="false">Transferência</button>
-        <button type="button" data-tipo="4" aria-pressed="false">Pagamento</button>
-      </div>
-      <div class="campos">
-        <div class="campo" id="campoOrigem" hidden><label for="origem">Conta de origem</label><input id="origem" type="number" inputmode="numeric" min="0" value="1"></div>
-        <div class="campo" id="campoDestino"><label for="destino">Conta de destino</label><input id="destino" type="number" inputmode="numeric" min="0" value="3"></div>
-        <div class="campo"><label for="valor">Valor (R$)</label><input id="valor" type="text" inputmode="decimal" value="100" autocomplete="off"><span class="dica-erro" id="erroValor"></span></div>
-      </div>
-      <button class="botao fifo" type="submit"><i class="ph ph-queue" aria-hidden="true"></i>Colocar na fila</button>
-    </form>
-
-    <div class="grupo">
-      <p class="rotulo">Processamento</p>
-      <div class="acoes">
-        <button class="botao fifo" id="processar" type="button">Processar próximo</button>
-        <button class="botao fifo" id="processarTodos" type="button">Processar todos</button>
-        <button class="botao lifo cheio" id="estornar" type="button"><i class="ph ph-arrow-u-up-left" aria-hidden="true"></i>Estornar o topo da pilha</button>
-      </div>
+    <div class="partes-acoes">
+      <button class="botao primario pequeno" id="rodarDemo" type="button"><i class="ph ph-play" aria-hidden="true"></i>Rodar</button>
+      <button class="botao pequeno" id="reiniciar" type="button"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i>Reiniciar</button>
     </div>
-
-    <form class="grupo" id="formAgendar" novalidate>
-      <p class="rotulo">Agenda · ordenada por inserção</p>
-      <div class="campos">
-        <div class="campo"><label for="agConta">Conta que paga</label><input id="agConta" type="number" inputmode="numeric" min="0" value="1"></div>
-        <div class="campo"><label for="agValor">Valor (R$)</label><input id="agValor" type="text" inputmode="decimal" value="50" autocomplete="off"><span class="dica-erro" id="erroAgValor"></span></div>
-        <div class="campo cheio"><label for="agData">Data do pagamento</label><input id="agData" type="date" value="2026-11-10"><span class="dica-erro" id="erroAgData"></span></div>
-      </div>
-      <button class="botao agenda" type="submit"><i class="ph ph-calendar-plus" aria-hidden="true"></i>Agendar pagamento</button>
-    </form>
-
-    <form class="grupo" id="formCancelar" novalidate>
-      <div class="campos">
-        <div class="campo"><label for="cancNum">Nº do agendado</label><input id="cancNum" type="number" inputmode="numeric" min="1" value="1"></div>
-        <div class="campo" style="align-self:end"><button class="botao agenda" type="submit" style="width:100%">Cancelar</button></div>
-      </div>
-    </form>
-
-    <form class="grupo" id="formAvancar" novalidate>
-      <div class="campos">
-        <div class="campo"><label for="novaData">Nova data</label><input id="novaData" type="date" value="2026-11-10"></div>
-        <div class="campo" style="align-self:end"><button class="botao agenda" type="submit" style="width:100%">Avançar</button></div>
-      </div>
-    </form>
-  </aside>
+  </nav>
 
   <!-- Palco: as estruturas -->
   <section class="palco" id="palco" aria-label="Estruturas de dados" tabindex="-1">
     <div class="contas" id="contas"></div>
 
-    <div class="painel">
+    <div class="painel" id="pFila">
       <header>
         <h2><span class="marca" style="background:var(--fifo)"></span>Fila de pedidos · FIFO</h2>
-        <span class="meta" id="filaMeta">inicio = 0 · quantidade = 0</span>
+        <span class="meta tec" id="filaMeta">inicio = 0 · quantidade = 0</span>
       </header>
+      <p class="desc">Pedidos esperando atendimento. Quem chegou primeiro é atendido primeiro.</p>
       <div class="trilho">
         <span class="ponta"><i class="ph ph-arrow-left" aria-hidden="true"></i>sai pelo início</span>
         <div class="fila-area">
           <div id="fila" class="lista-viva"></div>
-          <p class="vazio">Fila vazia. Faça um pedido imediato ao lado.</p>
+          <p class="vazio">Fila vazia.</p>
         </div>
         <span class="ponta"><i class="ph ph-arrow-left" aria-hidden="true"></i>entra pelo fim</span>
       </div>
     </div>
 
     <div class="meio">
-      <div class="painel">
-        <header><h2><span class="marca" style="background:var(--text)"></span>Variável <code>op</code></h2><span class="meta">em mãos</span></header>
+      <div class="painel" id="pOp">
+        <header><h2><span class="marca" style="background:var(--text)"></span><span class="nao-tec">Em atendimento</span><span class="tec">Variável <code>op</code></span></h2><span class="meta tec">em mãos</span></header>
+        <p class="desc">A operação que o banco está tratando agora.</p>
         <div class="op-area">
           <div id="op" class="lista-viva"></div>
-          <p class="vazio">Nenhuma ficha em mãos.</p>
+          <p class="vazio">Nenhuma operação agora.</p>
         </div>
       </div>
-      <div class="painel">
-        <header><h2><span class="marca" style="background:var(--lifo)"></span>Pilha · LIFO</h2><span class="meta" id="pilhaMeta">quantidade = 0</span></header>
+      <div class="painel" id="pPilha">
+        <header><h2><span class="marca" style="background:var(--lifo)"></span>Pilha · LIFO</h2><span class="meta tec" id="pilhaMeta">quantidade = 0</span></header>
+        <p class="desc">Operações que deram certo. O estorno tira sempre a de cima.</p>
         <div class="pilha-area">
           <div id="pilha" class="lista-viva"></div>
-          <p class="vazio">Pilha vazia: "Nada a estornar."</p>
+          <p class="vazio">Pilha vazia: nada a estornar.</p>
         </div>
       </div>
-      <div class="painel">
-        <header><h2><span class="marca" style="background:var(--agenda)"></span>Agenda · inserção</h2><span class="meta" id="agendaMeta">quantidade = 0</span></header>
+      <div class="painel" id="pAgenda">
+        <header><h2><span class="marca" style="background:var(--agenda)"></span>Agenda · <span class="nao-tec">por data</span><span class="tec">inserção</span></h2><span class="meta tec" id="agendaMeta">quantidade = 0</span></header>
+        <p class="desc">Pagamentos futuros, do mais cedo para o mais tarde.</p>
         <div class="agenda-area">
           <div id="agenda" class="lista-viva"></div>
           <p class="vazio">Nenhum pagamento agendado.</p>
@@ -357,10 +346,11 @@
       </div>
     </div>
 
-    <div class="painel">
-      <header><h2><span class="marca" style="background:var(--lista)"></span>Histórico · vetor</h2><span class="meta" id="histMeta">quantidade = 0</span></header>
+    <div class="painel" id="pHist">
+      <header><h2><span class="marca" style="background:var(--lista)"></span>Histórico · vetor</h2><span class="meta tec" id="histMeta">quantidade = 0</span></header>
+      <p class="desc">Tudo o que aconteceu, um evento por posição do vetor, na ordem.</p>
       <div class="hist-area">
-        <span class="indice-historico">itens[0…999]</span>
+        <span class="indice-historico tec">itens[0…999]</span>
         <div id="historico"></div>
       </div>
     </div>
@@ -370,11 +360,12 @@
   <aside class="explica" aria-label="O que está acontecendo">
     <div class="painel narracao" id="narracao" aria-live="polite">
       <p class="cmd" id="narCmd">Pronto para começar</p>
-      <p class="texto" id="narTexto">Clique em <b>Rodar a demonstração</b> para ver o roteiro do EP, ou faça seus próprios pedidos. Cada passo mostra a estrutura se mexendo, a linha de C que está rodando e o que o banco.exe imprimiria.</p>
+      <p class="texto" id="narTexto"></p>
       <div class="progresso" id="progresso" aria-hidden="true"></div>
       <div class="controle-passo">
-        <button class="botao pequeno" id="proximoPasso" type="button" disabled><i class="ph ph-skip-forward" aria-hidden="true"></i>Próximo passo</button>
+        <button class="botao primario pequeno" id="proximoPasso" type="button" disabled><i class="ph ph-skip-forward" aria-hidden="true"></i>Próximo passo</button>
         <button class="botao pequeno" id="pularTudo" type="button" disabled>Ir para o fim</button>
+        <p class="dica">Atalho: tecla <kbd>→</kbd></p>
       </div>
     </div>
     <div class="painel">
@@ -387,6 +378,8 @@
     </div>
   </aside>
 </main>
+
+<div class="balao" id="balao" role="status" aria-live="polite"></div>
 
 <script src="js/banco.js"></script>
 <script src="js/simulador.js"></script>

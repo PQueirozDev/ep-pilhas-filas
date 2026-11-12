@@ -25,6 +25,7 @@ try {
     const estado = await pagina.evaluate(async () => {
       const S = window.Simulador, B = window.BancoEP;
       S.tempoDoPasso = () => 0;
+      document.getElementById('autoPlay').checked = true;   /* por padrão, cada passo espera um clique */
       for (const c of B.ROTEIROS.demo.comandos) S.enfileirar(c.titulo, c.run(S.banco()));
       await S.tocar();
       return {

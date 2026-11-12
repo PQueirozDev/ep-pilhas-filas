@@ -99,6 +99,22 @@ console.log('\n5. Passos bem formados');
   const P = Object.values(B.ROTEIROS).flatMap(r => r.comandos.flatMap(c => c.run(b)));
   verificar(P.every(p => B.CODIGO[p.fn] && p.linha >= 0 && p.linha < B.CODIGO[p.fn].linhas.length), 'fn e linha existem em CODIGO');
   verificar(P.every(p => p.foto && typeof p.legenda === 'string' && p.legenda.length > 0), 'todo passo tem foto e legenda');
+  verificar(P.every(p => typeof p.simples === 'string' && p.simples.length > 0), 'todo passo tem frase simples (balão)');
+  /* Cada parte do simulador roda do zero sem erro e todo passo tem frase simples */
+  const partes = Object.entries(B.PARTES).map(([nome, parte]) => {
+    const b2 = new B.Banco();
+    parte.preparo.forEach(c => c.run(b2));
+    return [nome, parte.comandos.flatMap(c => c.run(b2)), b2];
+  });
+  verificar(partes.every(([, Q]) => Q.length > 0 && Q.every(p => p.simples && p.legenda)), 'partes: todos os passos com frase simples e legenda');
+  const [, , bFila] = partes.find(([n]) => n === 'fila');
+  verificar(bFila.contas[2].saldo === 10 && bFila.historico.map(h => h.situacao).join() === [B.SIT_EFETIVADA, B.SIT_RECUSADA].join(), 'parte fila: R$ 40 efetivado, R$ 30 recusado');
+  const [, , bPilha] = partes.find(([n]) => n === 'pilha');
+  verificar(bPilha.pilha.length === 0 && bPilha.contas.map(c => c.saldo).join() === '500,200,50', 'parte pilha: dois estornos desfazem tudo');
+  const [, , bAgenda] = partes.find(([n]) => n === 'agenda');
+  verificar(bAgenda.agenda.length === 1 && bAgenda.contas[0].saldo === 450, 'parte agenda: paga só o de 08/11');
+  const [, , bVetor] = partes.find(([n]) => n === 'vetor');
+  verificar(bVetor.historico.length === 4, 'parte vetor: quatro registros no histórico');
 }
 
 console.log('\n6. Histórico com limite fixo');

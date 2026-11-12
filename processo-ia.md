@@ -401,3 +401,39 @@ seu commit era de outra conta; ela continua guardada no repositório local.
 
 **Validação:** links do README e deste diário conferidos; testes em C, no simulador e no terminal passando.
 
+
+---
+
+## Iteração 14 · 2026-11-12 · Simulador dividido em partes e autoexplicativo
+
+**Pedido:** a simulação do site estava difícil de entender, com informação demais na tela e
+um roteiro longo demais para avançar passo a passo. A equipe quer operar sozinha na apresentação,
+com uma parte para cada estrutura, sem nada rodando automaticamente ao abrir e sem mexer no painel
+do código C ao vivo.
+
+**Como ficou (`slides/simulador.html`, `slides/js/simulador.js`):**
+- A coluna de comandos saiu. No lugar, abas **Fila · Pilha · Agenda · Vetor (histórico)** com
+  **Rodar** e **Reiniciar**. Cada aba mostra só as contas e a estrutura daquela parte.
+- Cada parte tem um roteiro curto (`BancoEP.PARTES`, em `slides/js/banco.js`): fila 7 passos,
+  pilha 6, agenda 8 e vetor 4. Passos que não mudam o que está na tela (por exemplo, o registro no
+  histórico fora da parte do vetor) são juntados ao passo seguinte, sem perder as linhas do terminal.
+- **Balão autoexplicativo:** a cada passo, uma frase em linguagem simples aparece colada na parte
+  que mudou. O motor ganhou o campo `simples` em todos os passos, ao lado da `legenda` técnica.
+- Nada roda sozinho: os passos esperam **Próximo passo** (botão menor) ou a tecla →. O interruptor
+  **Avançar sozinho** liga o modo automático e mostra a velocidade.
+- O interruptor **Detalhes técnicos** mostra os índices do vetor (`itens[0]`, `inicio`, `quantidade`),
+  o nome `op` e a explicação ligada ao código C. Desligado, a tela mostra só "próximo", "TOPO", "1º"...
+- No celular, Próximo passo e Ir para o fim ficam presos embaixo da tela.
+- `?roteiro=demo` (link dos slides) continua rodando a demonstração completa com todas as estruturas;
+  `?parte=pilha` abre direto numa parte.
+- Painel do código C, terminal e modo filme sem mudanças.
+
+**Testes:** `testes/teste_simulador.mjs` ganhou 6 verificações (frase simples em todos os passos e o
+resultado de cada parte). `ferramentas/verificar-site.mjs` liga o modo automático antes de rodar.
+
+**Revisão com o Codex** (`codex review --uncommitted`, duas rodadas): na primeira, um apontamento de
+que o modo filme dependeria do antigo interruptor `modoPasso`; conferido, nenhum arquivo usa esse ID.
+Na segunda, sobre a versão final, nenhum problema encontrado.
+
+**Validação:** `node testes/teste_simulador.mjs` (38 de 38), `verificar-site.mjs` em 1440 px e 390 px
+e uso manual no navegador das quatro partes, de Detalhes técnicos e do modo filme.

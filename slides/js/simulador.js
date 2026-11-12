@@ -5,6 +5,10 @@
  * passos com uma "foto" do estado. Aqui tocamos os passos em sequência:
  * desenhamos a foto e animamos o que mudou (técnica FLIP: medimos onde cada
  * ficha estava, desenhamos o novo estado e animamos do lugar antigo ao novo).
+ *
+ * A tela é dividida em partes (fila, pilha, agenda e vetor): cada uma mostra
+ * só a sua estrutura e roda um roteiro curto (BancoEP.PARTES). A cada passo,
+ * um balão em linguagem simples aparece colado na parte que mudou.
  */
 (function () {
   'use strict';
@@ -27,8 +31,11 @@
   let tocando = false, pulando = false, liberar = null, timer = null;
   const elementos = new Map();                  /* chave -> elemento (fichas e registros) */
   let fnAtual = null, hojeAtual = null;
+  let parteAtual = null;                        /* 'fila' | 'pilha' | 'agenda' | 'vetor' | null (tudo) */
+  let passoAtual = null;                        /* último passo mostrado (para redesenhar o balão) */
 
   const duracao = () => (movimentoReduzido.matches || pulando) ? 0 : Math.round(520 / velocidade);
+  const tecnico = () => document.documentElement.classList.contains('tecnico');
 
   /* ---------------- Texto ---------------- */
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -40,15 +47,22 @@
     if (d) return 'entra na conta ' + d;
     return '';
   }
+  /* Etiqueta da ficha: o texto simples sempre aparece; o índice do vetor só
+   * com "Detalhes técnicos" ligado. Sem texto simples, a etiqueta é só técnica. */
+  function etiqueta(simples, tec) {
+    if (!simples) return '<span class="tag tec">' + tec + '</span>';
+    return '<span class="tag">' + simples + (tec ? '<span class="tec"> · ' + tec + '</span>' : '') + '</span>';
+  }
   function htmlFicha(op, tag, extra) {
-    return '<span class="tag">' + tag + '</span>' +
+    return tag +
       '<div class="l1"><span class="num">#' + op.numero + '</span><span class="tipo">' + (B.NOME_CURTO[op.tipo] || '?') + '</span></div>' +
       '<div class="valor">' + B.reais(op.valor) + '</div>' +
       '<div class="rota">' + rota(op) + '</div>' + (extra || '');
   }
   const CLASSE_SIT = { 1: 'ok', 2: 'erro', 3: 'estorno', 4: 'agenda', 5: 'agenda', 6: 'ok', 7: 'erro' };
   function htmlNo(h) {
-    return '<div class="caixa"><span class="sit">[' + (h.id - 1) + '] ' + esc(B.NOME_SIT[h.situacao].trim()) + '</span>' +
+    return '<div class="caixa"><span class="sit"><span class="tec">[' + (h.id - 1) + '] </span><span class="nao-tec">' + h.id + 'º · </span>' +
+      esc(B.NOME_SIT[h.situacao].trim()) + '</span>' +
       '<span class="det">#' + h.op.numero + ' ' + B.NOME_CURTO[h.op.tipo].toLowerCase() + ' ' +
       B.reais(h.op.valor) + ' · ' + dataCurta(h.data) + '</span></div>';
   }
@@ -130,13 +144,14 @@
       });
     }
 
-    colocar($('fila'), foto.fila.map(({ indice, op }) =>
-      ({ chave: 'op' + op.numero, classe: 'ficha', html: htmlFicha(op, 'itens[' + indice + ']') })));
-    colocar($('op'), foto.emMaos ? [{ chave: 'op' + foto.emMaos.numero, classe: 'ficha', html: htmlFicha(foto.emMaos, 'op') }] : []);
+    colocar($('fila'), foto.fila.map(({ indice, op }, i) =>
+      ({ chave: 'op' + op.numero, classe: 'ficha', html: htmlFicha(op, etiqueta(i === 0 ? 'próximo' : (i + 1) + 'º', 'itens[' + indice + ']')) })));
+    colocar($('op'), foto.emMaos ? [{ chave: 'op' + foto.emMaos.numero, classe: 'ficha',
+      html: htmlFicha(foto.emMaos, '<span class="tag"><span class="nao-tec">agora</span><span class="tec">op</span></span>') }] : []);
     colocar($('pilha'), foto.pilha.map((op, i, a) =>
-      ({ chave: 'op' + op.numero, classe: 'ficha', html: htmlFicha(op, (i === a.length - 1 ? 'TOPO · ' : '') + 'itens[' + i + ']') })));
+      ({ chave: 'op' + op.numero, classe: 'ficha', html: htmlFicha(op, etiqueta(i === a.length - 1 ? 'TOPO' : '', 'itens[' + i + ']')) })));
     colocar($('agenda'), foto.agenda.map((op, i) =>
-      ({ chave: 'op' + op.numero, classe: 'ficha', html: htmlFicha(op, (i === 0 ? 'próximo · ' : '') + 'itens[' + i + ']', '<span class="quando">' + dataCurta(op.data) + '</span>') })));
+      ({ chave: 'op' + op.numero, classe: 'ficha', html: htmlFicha(op, etiqueta(i === 0 ? 'próximo' : '', 'itens[' + i + ']'), '<span class="quando">' + dataCurta(op.data) + '</span>') })));
     colocar($('historico'), foto.historico.map(h =>
       ({ chave: 'h' + h.id, classe: 'no s-' + CLASSE_SIT[h.situacao], html: htmlNo(h) })));
 
@@ -150,10 +165,10 @@
       const velho = antes.get(k);
       if (D && el._novo) {
         el.animate([{ opacity: 0, transform: 'translateY(16px) scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: D, easing: CURVA });
-      } else if (D && velho) {
+      } else if (D && velho && velho.width) {
         const novo = el.getBoundingClientRect();
         const k = palco().k, dx = (velho.left - novo.left) / k, dy = (velho.top - novo.top) / k;
-        if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+        if (novo.width && (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5)) {
           el.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }], { duration: D, easing: CURVA });
         }
       }
@@ -173,7 +188,7 @@
 
   function sair(el, rect, D) {
     el.remove();
-    if (!D || !rect) return;
+    if (!D || !rect || !rect.width) return;
     el.classList.add('saida-clone');
     const { x, y, k } = palco();
     Object.assign(el.style, { left: (rect.left - x) / k + 'px', top: (rect.top - y) / k + 'px', width: rect.width / k + 'px' });
@@ -203,6 +218,61 @@
     }
   }
 
+  /* ---------------- Balão ---------------- */
+  /* Painel de cada função, para quando o passo não destaca uma ficha visível */
+  const PAINEL_DA_FUNCAO = {
+    solicitarOperacao: 'pFila', enfileirar: 'pFila', desenfileirar: 'pFila', processarProximo: 'pFila',
+    empilhar: 'pPilha', desempilhar: 'pPilha', estornar: 'pPilha', desfazerOperacao: 'pPilha',
+    agendarPagamento: 'pAgenda', agendar: 'pAgenda', compararAgendados: 'pAgenda',
+    cancelarAgendado: 'pAgenda', avancarData: 'pAgenda',
+    registrarHistorico: 'pHist', conferirHistorico: 'pHist', aplicarOperacao: 'contas'
+  };
+  const visivel = el => el && el.getClientRects().length > 0;
+  function alvoDoBalao(p) {
+    const f = p.foco;
+    let el = null;
+    if (f && f.area === 'conta') el = $(f.chave);
+    else if (f && f.area !== 'data') el = elementos.get(f.chave);
+    if (!visivel(el)) el = $(PAINEL_DA_FUNCAO[p.fn]);
+    return visivel(el) ? el : $('palco');
+  }
+  function posicionarBalao() {
+    const balao = $('balao'), p = passoAtual;
+    if (!p || !p.simples) return;
+    const r = alvoDoBalao(p).getBoundingClientRect();
+    const largura = Math.min(360, innerWidth - 32);
+    balao.style.width = largura + 'px';
+    const altura = balao.offsetHeight, centro = r.left + r.width / 2;
+    const esquerda = Math.max(16, Math.min(centro - largura / 2, innerWidth - largura - 16));
+    /* Embaixo do alvo; se não couber, em cima; no último caso, preso à borda da tela */
+    let topo = r.bottom + 12, acima = false;
+    if (topo + altura > innerHeight - 16 && r.top - 12 - altura > 88) { topo = r.top - 12 - altura; acima = true; }
+    topo = Math.max(88, Math.min(topo, innerHeight - altura - 96));
+    balao.classList.toggle('acima', acima);
+    balao.style.setProperty('--seta', Math.max(16, Math.min(centro - esquerda, largura - 16)) + 'px');
+    balao.style.left = esquerda + scrollX + 'px';
+    balao.style.top = topo + scrollY + 'px';
+  }
+  function mostrarBalao(p) {
+    const balao = $('balao');
+    clearTimeout(balao._t);
+    balao.classList.remove('visivel');
+    if (FILME || !p || !p.simples) return;
+    /* Espera a animação das fichas terminar para medir o lugar final */
+    balao._t = setTimeout(() => {
+      balao.className = 'balao tom-' + p.tom;
+      balao.textContent = p.simples;
+      posicionarBalao();
+      balao.classList.add('visivel');
+    }, duracao() + 40);
+  }
+  function esconderBalao() {
+    const balao = $('balao');
+    clearTimeout(balao._t);
+    balao.classList.remove('visivel');
+    passoAtual = null;
+  }
+
   /* ---------------- Código, narração e terminal ---------------- */
   function mostrarCodigo(fn, linha, tom) {
     const c = B.CODIGO[fn], caixa = $('codigo');
@@ -219,9 +289,11 @@
     caixa.scrollTo({ top: ln.offsetTop - caixa.clientHeight / 2 + ln.offsetHeight / 2, behavior: rolagem() });
   }
 
+  /* A explicação ligada ao código C aparece no filme e com "Detalhes técnicos";
+   * no modo simples quem explica é o balão. */
   function narrar(p) {
     $('narCmd').textContent = p.titulo + ' · passo ' + (p.i + 1) + ' de ' + p.total;
-    $('narTexto').textContent = p.legenda;
+    $('narTexto').textContent = (FILME || tecnico()) ? p.legenda : '';
     $('narracao').className = 'painel narracao tom-' + p.tom;
     $('progresso').innerHTML = Array.from({ length: p.total }, (_, i) =>
       '<span class="' + (i < p.i ? 'feito' : i === p.i ? 'atual' : '') + '"></span>').join('');
@@ -243,12 +315,9 @@
   }
 
   /* ---------------- Tocador de passos ---------------- */
+  /* Usado pelo filme e pelo roteiro completo: cada comando conta os próprios passos */
   function enfileirar(titulo, passos) {
-    passos.forEach((p, i) => filaPassos.push({ ...p, titulo, i, total: passos.length }));
-  }
-  function executar(titulo, passos) {
-    enfileirar(titulo, passos);
-    tocar();
+    passos.forEach((p, i) => filaPassos.push({ ...p, titulo, i, total: passos.length, novoComando: i === 0 }));
   }
 
   async function tocar() {
@@ -266,12 +335,14 @@
   }
 
   function mostrar(p) {
-    if (p.i === 0) escrever(p.titulo, 'cmd');
+    if (p.novoComando) escrever(p.titulo, 'cmd');
     desenhar(p.foto, true);
     focar(p);
     mostrarCodigo(p.fn, p.linha, p.tom);
     narrar(p);
     p.log.forEach(l => escrever(l.replace(/^ {2}/, ''), classeLog(l)));
+    passoAtual = p;
+    mostrarBalao(p);
   }
 
   function aguardar(p) {
@@ -279,8 +350,9 @@
     return new Promise(resolve => {
       liberar = () => { clearTimeout(timer); timer = null; liberar = null; atualizarBotoes(); resolve(); };
       const ms = api.tempoDoPasso ? api.tempoDoPasso(p) : INTERVALO;
-      /* No filme não há botão de próximo passo: sempre avança sozinho */
-      if (FILME || !$('modoPasso').checked) timer = setTimeout(liberar, ms / velocidade);
+      /* Por padrão espera o clique em "Próximo passo"; no filme (sem botão) e
+       * com "Avançar sozinho" ligado, avança por tempo. */
+      if (FILME || $('autoPlay').checked) timer = setTimeout(liberar, ms / velocidade);
       atualizarBotoes();
     });
   }
@@ -293,6 +365,7 @@
   function reiniciar() {
     filaPassos.length = 0;
     if (liberar) liberar();
+    esconderBalao();
     banco = new B.Banco();
     elementos.forEach(el => el.remove());
     elementos.clear();
@@ -310,131 +383,90 @@
     $('progresso').innerHTML = '';
   }
 
+  /* Roteiro completo (simulador.html?roteiro=demo): todas as estruturas juntas */
   function rodarRoteiro(nome) {
+    escolherParte(null);
     reiniciar();
     /* Enfileira o roteiro inteiro antes de tocar, para nenhum comando ser atropelado */
     B.ROTEIROS[nome].comandos.forEach(c => enfileirar(c.titulo, c.run(banco)));
     tocar();
   }
 
-  /* ---------------- Formulários ---------------- */
-  /* Cada campo ganha uma mensagem de erro ligada a ele (aria-describedby) */
-  function prepararErros() {
-    document.querySelectorAll('.campo input').forEach(input => {
-      let msg = input.parentElement.querySelector('.dica-erro');
-      if (!msg) {
-        msg = document.createElement('span');
-        msg.className = 'dica-erro';
-        input.parentElement.appendChild(msg);
-      }
-      msg.id = 'erro-' + input.id;
-      msg.setAttribute('aria-live', 'polite');
-      input.setAttribute('aria-describedby', msg.id);
+  /* ---------------- Partes ---------------- */
+  /* Em cada parte, alguns passos não acrescentam nada ao que está na tela
+   * (ex.: o registro no histórico, que só aparece na parte do vetor). */
+  const MOSTRAR_PASSO = {
+    fila: p => p.fn !== 'registrarHistorico' && p.fn !== 'empilhar' && !(p.fn === 'solicitarOperacao' && p.tom !== 'erro'),
+    pilha: p => p.fn !== 'registrarHistorico',
+    agenda: p => p.fn !== 'registrarHistorico',
+    vetor: p => p.fn === 'registrarHistorico'
+  };
+  /* Junta os passos escondidos ao passo mostrado seguinte (ou ao anterior, no fim),
+   * sem perder as linhas do terminal; a foto do último passo é sempre o estado final. */
+  function resumir(passos, mostrarPasso) {
+    const saida = [];
+    let pendentes = [];
+    passos.forEach(p => {
+      if (mostrarPasso(p)) { saida.push({ ...p, log: pendentes.concat(p.log) }); pendentes = []; }
+      else pendentes = pendentes.concat(p.log);
     });
+    const ultimo = passos[passos.length - 1];
+    if (!saida.length) return ultimo ? [{ ...ultimo, log: pendentes }] : [];
+    const fim = saida[saida.length - 1];
+    saida[saida.length - 1] = { ...fim, foto: ultimo.foto, log: fim.log.concat(pendentes) };
+    return saida;
   }
-  function erroCampo(input, msg) {
-    $('erro-' + input.id).textContent = msg || '';
-    if (msg) { input.setAttribute('aria-invalid', 'true'); input.focus(); }
-    else input.removeAttribute('aria-invalid');
+
+  function escolherParte(nome) {
+    parteAtual = nome;
+    if (nome) document.documentElement.dataset.parte = nome;
+    else delete document.documentElement.dataset.parte;
+    document.querySelectorAll('.abas [data-parte]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.parte === nome)));
   }
-  /* Igual ao banco.exe: aceita 150, 150.50 ou 150,50 (e "nan", que o motor recusa) */
-  function lerValor(input) {
-    const t = input.value.trim().replace(',', '.');
-    erroCampo(input, '');
-    if (/^[+-]?nan$/i.test(t)) return NaN;
-    if (/^[+-]?inf(inity)?$/i.test(t)) return t.startsWith('-') ? -Infinity : Infinity;
-    if (!/^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/.test(t)) {
-      erroCampo(input, 'Digite um número, como 150 ou 150,50.');
-      return null;
+
+  /* Volta a parte ao ponto de partida: banco novo + preparo em silêncio */
+  function prepararParte(nome) {
+    escolherParte(nome);
+    reiniciar();
+    const parte = B.PARTES[nome];
+    if (parte.preparo.length) {
+      escrever('Antes desta parte:', 'cmd');
+      parte.preparo.forEach(c => c.run(banco).forEach(p => p.log.forEach(l => escrever(l.replace(/^ {2}/, ''), classeLog(l)))));
+      const foto = banco.foto();
+      montarContas(foto);
+      desenhar(foto, false);
     }
-    return Number(t);
-  }
-  /* Igual a lerInteiro do C: só aceita um número inteiro inteiro, sem casas */
-  function lerInteiro(input) {
-    const t = input.value.trim();
-    erroCampo(input, '');
-    if (!/^[+-]?\d{1,9}$/.test(t)) { erroCampo(input, 'Digite um número inteiro.'); return null; }
-    return Number(t);
-  }
-  /* Igual a dataExiste do C: ano entre 1900 e 2999 */
-  function lerData(input) {
-    erroCampo(input, '');
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input.value);
-    if (!m) { erroCampo(input, 'Escolha uma data.'); return null; }
-    if (Number(m[1]) < 1900 || Number(m[1]) > 2999) { erroCampo(input, 'Use um ano entre 1900 e 2999.'); return null; }
-    return Number(m[1] + m[2] + m[3]);
+    $('narCmd').textContent = parte.nome + ' · clique em Rodar para começar';
+    $('narTexto').textContent = parte.intro;
   }
 
-  let tipo = B.TIPO_DEPOSITO;
-  function escolherTipo(t) {
-    tipo = t;
-    document.querySelectorAll('.tipos button').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.tipo) === t)));
-    $('campoOrigem').hidden = t === B.TIPO_DEPOSITO;
-    $('campoDestino').hidden = !(t === B.TIPO_DEPOSITO || t === B.TIPO_TRANSFERENCIA);
+  function rodarParte() {
+    if (!parteAtual) { rodarRoteiro('demo'); return; }
+    prepararParte(parteAtual);
+    const passos = B.PARTES[parteAtual].comandos.flatMap(c =>
+      resumir(c.run(banco), MOSTRAR_PASSO[parteAtual]).map((p, i) => ({ ...p, titulo: c.titulo, novoComando: i === 0 })));
+    passos.forEach((p, i) => filaPassos.push({ ...p, i, total: passos.length }));
+    tocar();
   }
 
+  /* ---------------- Controles ---------------- */
   function ligar() {
-    document.querySelectorAll('.tipos button').forEach(b => b.addEventListener('click', () => escolherTipo(Number(b.dataset.tipo))));
-
-    $('formPedido').addEventListener('submit', e => {
-      e.preventDefault();
-      /* Só lê as contas que aparecem para o tipo escolhido */
-      const o = $('campoOrigem').hidden ? 0 : lerInteiro($('origem'));
-      if (o === null) return;
-      const d = $('campoDestino').hidden ? 0 : lerInteiro($('destino'));
-      if (d === null) return;
-      const valor = lerValor($('valor'));
-      if (valor === null) return;
-      let alvo = '';
-      if (tipo === B.TIPO_DEPOSITO) alvo = ' na conta ' + d;
-      else if (tipo === B.TIPO_TRANSFERENCIA) alvo = ' da conta ' + o + ' para a ' + d;
-      else alvo = ' da conta ' + o;
-      executar('Opção ' + tipo + ': ' + B.NOME_CURTO[tipo].toLowerCase() + ' de ' + $('valor').value.trim() + alvo,
-        banco.solicitarOperacao(tipo, o, d, valor));
-    });
-    $('processar').addEventListener('click', () => {
-      const P = [];
-      banco.processarProximo(P);
-      executar('Opção 5: processar o próximo da fila', P);
-    });
-    $('processarTodos').addEventListener('click', () => executar('Opção 6: processar a fila inteira', banco.processarTodos()));
-    $('estornar').addEventListener('click', () => executar('Opção 7: estornar o topo da pilha', banco.estornar()));
-
-    $('formAgendar').addEventListener('submit', e => {
-      e.preventDefault();
-      const conta = lerInteiro($('agConta'));
-      if (conta === null) return;
-      const valor = lerValor($('agValor'));
-      if (valor === null) return;
-      const data = lerData($('agData'));
-      if (data === null) return;
-      executar('Opção 8: agendar ' + $('agValor').value.trim() + ' da conta ' + conta + ' para ' + dataCurta(data),
-        banco.agendarPagamento(conta, valor, data));
-    });
-    $('formCancelar').addEventListener('submit', e => {
-      e.preventDefault();
-      const n = lerInteiro($('cancNum'));
-      if (n === null) return;
-      executar('Opção 9: cancelar o agendado #' + n, banco.cancelarAgendamento(n));
-    });
-    $('formAvancar').addEventListener('submit', e => {
-      e.preventDefault();
-      const data = lerData($('novaData'));
-      if (data === null) return;
-      executar('Opção 10: avançar a data para ' + dataCurta(data), banco.avancarData(data));
-    });
-
-    $('rodarDemo').addEventListener('click', () => rodarRoteiro('demo'));
-    $('rodarEstorno').addEventListener('click', () => rodarRoteiro('estornoImpossivel'));
-    $('reiniciar').addEventListener('click', reiniciar);
+    document.querySelectorAll('.abas [data-parte]').forEach(b => b.addEventListener('click', () => prepararParte(b.dataset.parte)));
+    $('rodarDemo').addEventListener('click', rodarParte);
+    $('reiniciar').addEventListener('click', () => (parteAtual ? prepararParte(parteAtual) : reiniciar()));
     $('limparTerminal').addEventListener('click', () => { $('terminal').textContent = ''; });
 
     $('proximoPasso').addEventListener('click', () => { if (liberar) liberar(); });
     $('pularTudo').addEventListener('click', () => { pulando = true; if (liberar) liberar(); });
-    $('modoPasso').addEventListener('change', e => {
-      if (e.target.checked) { clearTimeout(timer); timer = null; }
+    $('autoPlay').addEventListener('change', e => {
+      $('velocidades').hidden = !e.target.checked;
+      if (!e.target.checked) { clearTimeout(timer); timer = null; }
       else if (liberar) liberar();
       atualizarBotoes();
+    });
+    $('modoTecnico').addEventListener('change', e => {
+      document.documentElement.classList.toggle('tecnico', e.target.checked);
+      if (passoAtual) { narrar(passoAtual); posicionarBalao(); }
     });
     document.querySelectorAll('[data-vel]').forEach(b => b.addEventListener('click', () => {
       velocidade = Number(b.dataset.vel);
@@ -444,14 +476,17 @@
       if (e.target.closest('input, textarea, select')) return;
       if ((e.key === 'n' || e.key === 'ArrowRight') && liberar) { e.preventDefault(); liberar(); }
     });
+    window.addEventListener('resize', posicionarBalao);
   }
 
-  prepararErros();
   ligar();
-  escolherTipo(B.TIPO_DEPOSITO);
   reiniciar();
-  const pedido = new URLSearchParams(location.search).get('roteiro');
-  if (!FILME && pedido && B.ROTEIROS[pedido]) rodarRoteiro(pedido);
+  if (!FILME) {
+    const busca = new URLSearchParams(location.search);
+    const roteiro = busca.get('roteiro'), parte = busca.get('parte');
+    if (roteiro && B.ROTEIROS[roteiro]) rodarRoteiro(roteiro);
+    else prepararParte(B.PARTES[parte] ? parte : 'fila');
+  }
 
   Object.assign(api, { enfileirar, tocar, reiniciar, banco: () => banco });
   window.Simulador = api;
