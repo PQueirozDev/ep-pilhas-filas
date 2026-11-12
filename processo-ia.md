@@ -543,3 +543,11 @@ equipe vai falar durante a apresentação.
 estilos e as funções que o posicionavam. O resto continua: código C, terminal, barra de progresso e a
 explicação técnica opcional ("Detalhes técnicos", desligada por padrão). As frases simples continuam
 no motor (`slides/js/banco.js`), apenas não aparecem mais na tela.
+
+## Iteração 24 · 2026-11-12 · Caixas do simulador sem frase de explicação
+
+**Pedido:** tirar as frases explicativas das caixas Fila, Em atendimento e Pilha do simulador, pelo
+mesmo motivo dos balões: é o que a equipe vai falar.
+
+**Alterações (`slides/simulador.html`):** saíram as três frases (`p.desc`). As caixas Agenda e Vetor
+(histórico) mantêm as suas.

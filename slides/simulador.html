@@ -403,7 +403,6 @@
         <h2><span class="marca" style="background:var(--fifo)"></span>Fila de pedidos · FIFO</h2>
         <span class="meta tec" id="filaMeta">inicio = 0 · quantidade = 0</span>
       </header>
-      <p class="desc">Pedidos esperando atendimento. Quem chegou primeiro é atendido primeiro.</p>
       <div class="trilho">
         <span class="ponta"><i class="ph ph-arrow-left" aria-hidden="true"></i>sai pelo início</span>
         <div class="fila-area">
@@ -417,7 +416,6 @@
     <div class="meio">
       <div class="painel" id="pOp">
         <header><h2><span class="marca" style="background:var(--text)"></span><span class="nao-tec">Em atendimento</span><span class="tec">Variável <code>op</code></span></h2><span class="meta tec">em mãos</span></header>
-        <p class="desc">A operação que o banco está tratando agora.</p>
         <div class="op-area">
           <div id="op" class="lista-viva"></div>
           <p class="vazio">Nenhuma operação agora.</p>
@@ -425,7 +423,6 @@
       </div>
       <div class="painel" id="pPilha">
         <header><h2><span class="marca" style="background:var(--lifo)"></span>Pilha · LIFO</h2><span class="meta tec" id="pilhaMeta">quantidade = 0</span></header>
-        <p class="desc">Operações que deram certo. O estorno tira sempre a de cima.</p>
         <div class="pilha-area">
           <div id="pilha" class="lista-viva"></div>
           <p class="vazio">Pilha vazia: nada a estornar.</p>
